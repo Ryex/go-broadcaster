@@ -1,9 +1,9 @@
 # go-broadcaster
-a rewrite of Sourcefabric's Airtime in Go for better performance and lower resource usage
+A rewrite of Sourcefabric's Airtime in Go for better performance and lower resource usage
 
 ## Structure
 
-go-broadcaster will consist of 3 min Go programs.
+go-broadcaster will consist of 3 main Go programs.
 
 * A web frontend (currently go-broadcaster-web)
 * A media library monitor (currently media-monitor)
