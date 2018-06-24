@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,6 +39,18 @@ func main() {
 	cfgPath := filepath.Join(root, "config.json")
 	view := jet.NewHTMLSet(filepath.Join(root, "views"))
 
+	cfgPtr := flag.String("config", cfgPath, "Path to the config.json file")
+
+	flag.Parse()
+
+	cfgPath = *cfgPtr
+
+	cfgPath, pathErr := filepath.Abs(cfgPath)
+	if pathErr != nil {
+		logutils.Log.Error("could not get absolute path for config")
+	}
+
+	logutils.Log.Info("Loading config from: ", cfgPath)
 	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
 		logutils.Log.Error("error when loading configuration", err)

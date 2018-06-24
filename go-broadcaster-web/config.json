@@ -1,6 +1,0 @@
-{
-  "DBURL":  "localhost",
-	"DPPort":  "5432",
-	"DBUser":   "postgres",
-	"DBPassword": "pgpasstest"
-}

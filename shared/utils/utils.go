@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/ryex/go-broadcaster/shared/logutils"
 )
 
 func StringInSlice(a string, list []string) bool {
@@ -20,21 +21,27 @@ type SearchFunc func(path string) error
 func WalkSearch(root string, extensions []string, cb SearchFunc) error {
 	rootPath, aerr := filepath.Abs(root)
 	if aerr != nil {
-		fmt.Println("could not get an absolute path")
+		logutils.Log.Error("could not get an absolute path for", root)
 		return aerr
 	}
-
+	logutils.Log.Info("Processing Directory... ", rootPath)
 	werr := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if path == rootPath {
+			return nil
+		}
 		if info.IsDir() {
 			derr := WalkSearch(path, extensions, cb)
 			if derr != nil {
 				return derr
 			}
+			return nil
 		}
+		logutils.Log.Info("Processing File... ", path)
+		logutils.Log.Info("File Extension: ", filepath.Ext(path))
 		if StringInSlice(filepath.Ext(path), extensions) {
 			cerr := cb(path)
 			if cerr != nil {
-				fmt.Println("error in search callback")
+				logutils.Log.Error("error in search callback", path)
 				return cerr
 			}
 		}
@@ -42,7 +49,7 @@ func WalkSearch(root string, extensions []string, cb SearchFunc) error {
 		return nil
 	})
 	if werr != nil {
-		fmt.Println("error walking library path")
+		logutils.Log.Error("error walking library path", rootPath)
 		return werr
 	}
 	return nil

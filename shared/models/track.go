@@ -1,6 +1,13 @@
 package models
 
+import "time"
+
 type Track struct {
-	Name   string
-	Length float32
+	Title       string
+	Album       string
+	AlbumArtist string
+	Composer    string
+	Genre       string
+	Year        int
+	Length      time.Duration
 }

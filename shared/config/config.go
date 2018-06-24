@@ -6,10 +6,11 @@ import (
 )
 
 type Config struct {
-	DBURL      string
-	DPPort     string
-	DBUser     string
-	DBPassword string
+	DBURL      string   `json:"DBURL"`
+	DPPort     string   `json:"DPPort"`
+	DBUser     string   `json:"DBUser"`
+	DBPassword string   `json:"DBPassword"`
+	MediaExts  []string `json:"MediaExts"`
 }
 
 func LoadConfig(filename string) (Config, error) {

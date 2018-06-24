@@ -22,5 +22,6 @@ Initial design will focus around making playlists and scheduling them for playba
 
 ## TODO
   * implement monitoring of, and importing of media in, library paths stored in the database
+    - switch to tagLib wrapper
   * implement basic functionality of playout-engine
   * implement playlist creation
