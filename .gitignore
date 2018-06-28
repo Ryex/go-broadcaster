@@ -13,3 +13,5 @@
 
 #test config
 config.json
+vender/*
+.ftpconfig
