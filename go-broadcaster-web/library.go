@@ -15,20 +15,20 @@ func LibraryHandeler(env *Env) func(http.ResponseWriter, *http.Request) {
 
 		fmt.Println(req.Method)
 		if req.Method == "POST" {
-      ferr := req.ParseForm()
-      if ferr != nil {
-        logutils.Log.Info("could not parse form data")
-      }
+			ferr := req.ParseForm()
+			if ferr != nil {
+				logutils.Log.Info("could not parse form data")
+			}
 			for k, v := range req.Form {
 				fmt.Println("key:", k)
 				fmt.Println("val:", strings.Join(v, ""))
 			}
-      libPath := new(models.LibraryPath)
-      libPath.Path = req.FormValue("libpath")
-      ierr := env.DB.Insert(libPath)
-      if ierr != nil {
-        logutils.Log.Error("Could not add lib path to DB", ierr)
-      }
+			libPath := new(models.LibraryPath)
+			libPath.Path = req.FormValue("libpath")
+			ierr := env.DB.Insert(libPath)
+			if ierr != nil {
+				logutils.Log.Error("Could not add lib path to DB", ierr)
+			}
 		}
 
 		t, err := env.View.GetTemplate("library.html")

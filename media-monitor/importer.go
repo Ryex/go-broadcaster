@@ -1,13 +1,13 @@
 package main
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/dhowden/tag"
 	"github.com/go-pg/pg"
 	"github.com/ryex/go-broadcaster/shared/config"
 	"github.com/ryex/go-broadcaster/shared/logutils"
 	"github.com/ryex/go-broadcaster/shared/models"
+	taglib "github.com/wtolson/go-taglib"
 )
 
 type Importer struct {
@@ -24,27 +24,31 @@ func ProcessImport(imp Importer) error {
 
 func getMediaInfo(path string) error {
 	logutils.Log.Info("Getting metadata for ", path)
-	file, err := os.Open(path)
+	file, err := taglib.Read(path)
 	if err != nil {
 		logutils.Log.Error("Could not open file", err)
 		return err
 	}
-	meta, merr := tag.ReadFrom(file)
-	if merr != nil {
-		logutils.Log.Error("Could not read metadata")
-		return merr
-	}
+	defer file.Close()
 
 	track := new(models.Track)
-	track.Title = meta.Title()
-	track.Album = meta.Album()
-	track.AlbumArtist = meta.AlbumArtist()
-	track.Composer = meta.Composer()
-	track.Genre = meta.Genre()
-	track.Year = meta.Year()
+	track.Title = file.Title()
+	track.Album = file.Album()
+	track.Artist = file.Artist()
+	//track.Composer = meta.Composer()
+	track.Genre = file.Genre()
+	track.Year = file.Year()
+	track.Bitrate = file.Bitrate()
+	track.Channels = file.Channels()
+	track.Length = file.Length()
+	track.Samplerate = file.Samplerate()
+	fmt.Println(track.String())
+
+	//file.Track()
 
 	logutils.Log.Info(track)
-	logutils.Log.Info("Raw Metadata: ", meta.Raw())
+	//logutils.Log.Info("Raw Metadata: ", meta.Raw())
+	logutils.Log.Info("Track Comment: ", file.Comment())
 
 	return nil
 }

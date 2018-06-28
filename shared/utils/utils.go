@@ -36,8 +36,8 @@ func WalkSearch(root string, extensions []string, cb SearchFunc) error {
 			}
 			return nil
 		}
-		logutils.Log.Info("Processing File... ", path)
-		logutils.Log.Info("File Extension: ", filepath.Ext(path))
+		// logutils.Log.Info("Processing File... ", path)
+		// logutils.Log.Info("File Extension: ", filepath.Ext(path))
 		if StringInSlice(filepath.Ext(path), extensions) {
 			cerr := cb(path)
 			if cerr != nil {

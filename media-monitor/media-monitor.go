@@ -24,7 +24,7 @@ func main() {
 
 	cfgPath = *cfgPtr
 	// DEBUG
-	cfgPath = "..\\config.json"
+	cfgPath = "../config.json"
 
 	cfgPath, pathErr := filepath.Abs(cfgPath)
 	if pathErr != nil {
