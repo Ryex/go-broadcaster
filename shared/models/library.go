@@ -9,6 +9,7 @@ import (
 )
 
 type LibraryPath struct {
+	Id        int64
 	Path      string
 	Added     time.Time
 	LastIndex time.Time

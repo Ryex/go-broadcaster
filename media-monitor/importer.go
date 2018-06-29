@@ -32,17 +32,17 @@ func getMediaInfo(path string) error {
 	defer file.Close()
 
 	track := new(models.Track)
+	track.Path = path
 	track.Title = file.Title()
 	track.Album = file.Album()
 	track.Artist = file.Artist()
-	//track.Composer = meta.Composer()
+	track.Composer = file.Tag("COMPOSER")
 	track.Genre = file.Genre()
 	track.Year = file.Year()
 	track.Bitrate = file.Bitrate()
 	track.Channels = file.Channels()
 	track.Length = file.Length()
 	track.Samplerate = file.Samplerate()
-	fmt.Println(track.String())
 
 	//file.Track()
 
