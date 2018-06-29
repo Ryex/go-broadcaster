@@ -36,7 +36,6 @@ func getMediaInfo(path string) error {
 	track.Title = file.Title()
 	track.Album = file.Album()
 	track.Artist = file.Artist()
-	track.Composer = file.Tag(taglib.TagName)
 	track.Genre = file.Genre()
 	track.Year = file.Year()
 	track.Bitrate = file.Bitrate()
