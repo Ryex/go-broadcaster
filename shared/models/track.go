@@ -10,7 +10,6 @@ type Track struct {
 	Title      string
 	Album      string
 	Artist     string
-	Composer   string
 	Genre      string
 	Year       int
 	Length     time.Duration
