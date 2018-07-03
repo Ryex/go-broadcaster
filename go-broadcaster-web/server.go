@@ -67,6 +67,16 @@ func main() {
 
 	e.Use(middleware.Logger())
 
+	CreateAPIRoutes(e, api)
+
+	logutils.Log.Info("running at localhost:8080")
+
+	e.HideBanner = true
+	e.Logger.Fatal(e.Start(":8080"))
+
+}
+
+func CreateAPIRoutes(e *echo.Echo, api *api.Api) {
 	e.GET("/library", api.GetLibraryPaths)
 	e.GET("/library/:id", api.GetLibraryPath)
 	e.PUT("/library", api.PutLibraryPath)
@@ -76,9 +86,4 @@ func main() {
 	e.GET("/tracks", api.GetTracks)
 	e.PUT("/track", api.PutTrack)
 	e.DELETE("/track/:id", api.DeleteTrack)
-
-	logutils.Log.Info("running at localhost:8080")
-
-	e.Logger.Fatal(e.Start(":8080"))
-
 }
