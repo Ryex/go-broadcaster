@@ -67,7 +67,7 @@ func main() {
 
 	e.Use(middleware.Logger())
 
-	CreateAPIRoutes(e, api)
+	CreateAPIRoutes(e, &api)
 
 	logutils.Log.Info("running at localhost:8080")
 
