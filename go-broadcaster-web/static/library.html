@@ -1,0 +1,27 @@
+
+
+{{extends "layouts/application.html"}}
+
+{{block body()}}
+  <h1>Library</h1>
+  Total Paths: {{libPathsCount}}
+  <table>
+    {{range _, p := libPaths }}
+      <tr>
+        <td>{{p.Path}}</td>
+        <td>{{p.Added}}</td>
+        <td>{{p.LastIndex}}</td>
+        <td>{{p.Indexing}}</td>
+      </tr>
+    {{end}}
+  </table>
+  <form action="/library" method="post">
+    <div>
+      <label for="libpath">Library Path </label>
+      <input type="text" value="" name="libpath" id="libpath" />
+    </div>
+    <div>
+      <input type="submit" value="Add" />
+    </div>
+  </form>
+{{end}}
