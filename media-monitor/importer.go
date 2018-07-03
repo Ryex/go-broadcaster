@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/go-pg/pg"
 	"github.com/ryex/go-broadcaster/shared/config"
 	"github.com/ryex/go-broadcaster/shared/logutils"
