@@ -21,7 +21,7 @@ func (api *Api) GetTrack(c echo.Context) error {
 	track.Id = id
 	dberr := api.DB.Model(track).Where("track.id = ?", id).Select()
 	if dberr != nil {
-		logutils.Log.Error("db query error", dberr, count)
+		logutils.Log.Error("db query error", dberr)
 		return dberr
 	}
 
