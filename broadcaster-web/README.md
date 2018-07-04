@@ -2,7 +2,17 @@
 
 > client for go-broadcaster
 
-## Build Setup
+## Build Go Application
+
+```bash
+# runs `npm run build`  then `go-bindata-assetfs dist/...`
+go generate
+
+# after bindata.go has been generated generate final binary
+go build
+```
+
+## Vuejs Build Setup
 
 ``` bash
 # install dependencies

@@ -5,18 +5,15 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
-	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/rakyll/statik/fs"
-
-	// import statik filesystem
-	_ "github.com/ryex/go-broadcaster/broadcaster-web/client/statik"
 
 	"github.com/ryex/go-broadcaster/broadcaster-web/api"
 	"github.com/ryex/go-broadcaster/shared/config"
@@ -77,6 +74,13 @@ func main() {
 	e.Use(middleware.Logger())
 
 	CreateAPIRoutes(e, &api)
+	CreateStaticRoutes(e)
+
+	data, err := json.MarshalIndent(e.Routes(), "", "  ")
+	if err != nil {
+		return
+	}
+	ioutil.WriteFile("routes.json", data, 0644)
 
 	logutils.Log.Info("running at localhost:8080")
 
@@ -97,21 +101,31 @@ func CreateAPIRoutes(e *echo.Echo, api *api.Api) {
 	g.PUT("/track", api.PutTrack)
 	g.DELETE("/track/:id", api.DeleteTrack)
 
-	data, err := json.MarshalIndent(e.Routes(), "", "  ")
-	if err != nil {
-		return
-	}
-	ioutil.WriteFile("routes.json", data, 0644)
-
 }
 
-func CreateStaticRoutes(e *echo.Echo, api *api.Api) {
-	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	e.
-
+func CreateStaticRoutes(e *echo.Echo) {
+	afs := assetFS()
+	//
+	fs := http.FileServer(afs)
+	//
+	// e.GET("/", echo.WrapHandler(fs))
+	//
+	// e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", fs)))
+	//fs := http.FileServer(http.Dir("dist"))
+	e.GET("/static/*", func(c echo.Context) error {
+		r := c.Request()
+		w := c.Response().Writer
+		fmt.Println(r.URL.Path)
+		fs.ServeHTTP(w, r)
+		return nil
+	})
+	e.GET("/*", func(c echo.Context) error {
+		r := c.Request()
+		w := c.Response().Writer
+		fmt.Println(r.URL.Path)
+		r.URL.Path = "/"
+		fs.ServeHTTP(w, r)
+		return nil
+	})
 
 }
