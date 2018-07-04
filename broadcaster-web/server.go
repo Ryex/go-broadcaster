@@ -1,17 +1,24 @@
+//go:generate npm run build
+//go:generate go-bindata-assetfs dist/...
 package main
 
 import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/rakyll/statik/fs"
 
-	"github.com/ryex/go-broadcaster/go-broadcaster-web/api"
+	// import statik filesystem
+	_ "github.com/ryex/go-broadcaster/broadcaster-web/client/statik"
+
+	"github.com/ryex/go-broadcaster/broadcaster-web/api"
 	"github.com/ryex/go-broadcaster/shared/config"
 	"github.com/ryex/go-broadcaster/shared/logutils"
 	"github.com/ryex/go-broadcaster/shared/models"
@@ -95,5 +102,16 @@ func CreateAPIRoutes(e *echo.Echo, api *api.Api) {
 		return
 	}
 	ioutil.WriteFile("routes.json", data, 0644)
+
+}
+
+func CreateStaticRoutes(e *echo.Echo, api *api.Api) {
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	e.
+
 
 }
