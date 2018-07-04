@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -77,13 +79,21 @@ func main() {
 }
 
 func CreateAPIRoutes(e *echo.Echo, api *api.Api) {
-	e.GET("/library", api.GetLibraryPaths)
-	e.GET("/library/:id", api.GetLibraryPath)
-	e.PUT("/library", api.PutLibraryPath)
-	e.DELETE("/library/:id", api.DeleteLibraryPath)
+	g := e.Group("/api")
+	g.GET("/library", api.GetLibraryPaths)
+	g.GET("/library/:id", api.GetLibraryPath)
+	g.PUT("/library", api.PutLibraryPath)
+	g.DELETE("/library/:id", api.DeleteLibraryPath)
 
-	e.GET("/track/:id", api.GetTrack)
-	e.GET("/tracks", api.GetTracks)
-	e.PUT("/track", api.PutTrack)
-	e.DELETE("/track/:id", api.DeleteTrack)
+	g.GET("/track/:id", api.GetTrack)
+	g.GET("/tracks", api.GetTracks)
+	g.PUT("/track", api.PutTrack)
+	g.DELETE("/track/:id", api.DeleteTrack)
+
+	data, err := json.MarshalIndent(e.Routes(), "", "  ")
+	if err != nil {
+		return
+	}
+	ioutil.WriteFile("routes.json", data, 0644)
+
 }

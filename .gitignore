@@ -16,5 +16,7 @@ config.json
 vender/*
 .ftpconfig
 
-go-broadcaster-web/go-broadcaster-web
+broadcaster-web/go-broadcaster-web
 media-monitor/media-monitor
+
+broadcaster-web/routes.json
