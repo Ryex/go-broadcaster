@@ -16,7 +16,30 @@ config.json
 vender/*
 .ftpconfig
 
-broadcaster-web/go-broadcaster-web
+broadcaster-web/broadcaster-web
 media-monitor/media-monitor
 
 broadcaster-web/routes.json
+
+*node_modules/*
+
+*package-lock.json
+
+
+
+broadcaster-web/node_modules/
+broadcaster-web/dist/
+broadcaster-web/npm-debug.log*
+broadcaster-web/yarn-debug.log*
+broadcaster-web/yarn-error.log*
+broadcaster-web/test/unit/coverage/
+broadcaster-web/test/e2e/reports/
+broadcaster-web/selenium-debug.log
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
