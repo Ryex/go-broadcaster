@@ -10,7 +10,8 @@ import (
 	"github.com/ryex/go-broadcaster/shared/models"
 )
 
-func (api *Api) GetTrack(c echo.Context) error {
+// GET /api/track/id/:id
+func (a *Api) GetTrackById(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		logutils.Log.Error("Error parsing id", err)
@@ -18,9 +19,9 @@ func (api *Api) GetTrack(c echo.Context) error {
 	}
 
 	q := models.TrackQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
-	t, err := q.GetTrackByID(id)
+	t, err := q.GetTrackById(id)
 
 	if err != nil {
 		return c.JSON(http.StatusNotFound, Responce{
@@ -35,9 +36,10 @@ func (api *Api) GetTrack(c echo.Context) error {
 	})
 }
 
-func (api *Api) GetTracks(c echo.Context) error {
+// GET /api/tracks
+func (a *Api) GetTracks(c echo.Context) error {
 	q := models.TrackQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
 
 	tracks, count, err := q.GetTracks(c.QueryParams())
@@ -56,7 +58,8 @@ func (api *Api) GetTracks(c echo.Context) error {
 }
 
 // Mostly for debug purposes not really intended for use
-func (api *Api) PutTrack(c echo.Context) error {
+// POST /api/track
+func (a *Api) AddTrack(c echo.Context) error {
 
 	track := new(models.Track)
 	track.Path = c.FormValue("path")
@@ -104,19 +107,22 @@ func (api *Api) PutTrack(c echo.Context) error {
 
 	track.Added = time.Now()
 
-	err = api.DB.Insert(track)
+	err = a.DB.Insert(track)
 	if err != nil {
 		logutils.Log.Error("Could not add track to DB", err)
 		return err
 	}
 
-	return c.JSON(http.StatusCreated, H{
-		"created": track,
+	return c.JSON(http.StatusCreated, Responce{
+		Data: H{
+			"created": track,
+		},
 	})
 
 }
 
-func (api *Api) DeleteTrack(c echo.Context) error {
+// DELETE /api/track/:id
+func (a *Api) DeleteTrack(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		logutils.Log.Error("Error parsing id", err)
@@ -124,10 +130,10 @@ func (api *Api) DeleteTrack(c echo.Context) error {
 	}
 
 	q := models.TrackQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
 
-	err = q.DeleteTrackByID(id)
+	err = q.DeleteTrackById(id)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Responce{

@@ -16,7 +16,7 @@ import (
 type LibraryPath struct {
 	Id        int64
 	Path      string
-	Added     time.Time
+	Added     time.Time `sql:"default:now()"`
 	LastIndex time.Time
 	Indexing  bool
 }

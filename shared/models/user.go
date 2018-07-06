@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"time"
 
 	"github.com/go-pg/pg"
 	"github.com/ryex/go-broadcaster/shared/logutils"
@@ -10,22 +11,24 @@ import (
 
 type Role struct {
 	Id          int64
-	IdStr       string
-	parents     map[string]Role
+	IdStr       string `sql:",unique"`
+	parents     []Role
 	permissions map[string]bool
 }
 
 type Permissions map[string]bool
-type Parents map[string]Role
 
 func NewRole(id string, parents ...Role) *Role {
 	role := &Role{
 		IdStr:       id,
-		parents:     make(Parents),
 		permissions: make(Permissions),
 	}
 	for _, parent := range parents {
-		role.parents[parent.IdStr] = parent
+		// can't get a role parented to itself
+		if parent.IdStr == id {
+			continue
+		}
+		role.parents = append(role.parents, parent)
 	}
 	return role
 }
@@ -56,6 +59,10 @@ func (r *Role) Permit(p string) bool {
 	}
 	//check if any of the parent roles has the permission
 	for _, parent := range r.parents {
+		// sanity check to prevent recusion should the wworst happen
+		if parent.IdStr == r.IdStr {
+			continue
+		}
 		if parent.Permit(p) {
 			return true
 		}
@@ -71,11 +78,77 @@ func (r *Role) Deny(p string) bool {
 	return false
 }
 
+type RoleQuery struct {
+	DB *pg.DB
+}
+
+func (rq *RoleQuery) GetRoleByName(name string) (r *Role, err error) {
+	r = new(Role)
+	err = rq.DB.Model(r).Where("role.id_str = ?", name).Select()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (rq *RoleQuery) GetRoleById(id int64) (r *Role, err error) {
+	r = new(Role)
+	err = rq.DB.Model(r).Where("role.id = ?", id).Select()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (rq *RoleQuery) GetRoles(names []string) (roles []Role, err error) {
+	roles = make([]Role, len(names))
+	err = rq.DB.Model(roles).Where("role.id_str in (?)", pg.In(names)).Select()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (rq *RoleQuery) AddRole(name string, perms []string, parents []Role) (r *Role, err error) {
+	r = NewRole(name, parents...)
+	for _, perm := range perms {
+		r.Assign(perm)
+	}
+	err = rq.DB.Insert(r)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (rq *RoleQuery) UpdateRole(id int64, name string, perms []string, parents []Role) (r *Role, err error) {
+	r = NewRole(name, parents...)
+	r.Id = id
+	for _, perm := range perms {
+		r.Assign(perm)
+	}
+	err = rq.DB.Update(r)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (rq *RoleQuery) DeleteRoleById(id int64) (err error) {
+	r := new(Role)
+	_, err = rq.DB.Model(r).Where("role.id = ?", id).Delete()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
 type User struct {
-	Id       int64
-	Username string
-	Password string
-	Roles    []Role
+	Id        int64
+	Username  string `sql:",unique"`
+	Password  string
+	Roles     []Role
+	CreatedAt time.Time `sql:"default:now()"`
 }
 
 // returns if ANY role has permission
@@ -118,20 +191,54 @@ type UserQuery struct {
 	DB *pg.DB
 }
 
-func (uq *UserQuery) GetUserByID(id int64) (u *User, dberr error) {
+func (uq *UserQuery) GetUserById(id int64) (u *User, err error) {
 	u = new(User)
-	dberr = uq.DB.Model(u).Where("user.id = ?", id).Select()
-	if dberr != nil {
-		logutils.Log.Error("db query error", dberr)
+	err = uq.DB.Model(u).Where("user.id = ?", id).Select()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
 	}
 	return
 }
 
-func (uq *UserQuery) GetUserByName(name string) (u *User, dberr error) {
+func (uq *UserQuery) GetUserByName(name string) (u *User, err error) {
 	u = new(User)
-	dberr = uq.DB.Model(u).Where("user.username = ?", name).Select()
-	if dberr != nil {
-		logutils.Log.Error("db query error", dberr)
+	err = uq.DB.Model(u).Where("user.username = ?", name).Select()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) DeleteUserById(id int64) (err error) {
+	u := new(User)
+	_, err = uq.DB.Model(u).Where("user.id = ?", id).Delete()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) AddUser(name string, pass string, roles []Role) (u *User, err error) {
+	if name == "" {
+		err = errors.New("empty username")
+		return
+	}
+
+	// hash the password so we dont store it plaintext
+	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		logutils.Log.Error("password hashing error", err)
+		return
+	}
+
+	u = new(User)
+	u.Username = name
+	u.Password = string(hashpass)
+	u.Roles = roles
+
+	err = uq.DB.Insert(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
 	}
 	return
 }

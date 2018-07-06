@@ -24,7 +24,7 @@ type Track struct {
 	Channels   int
 	Samplerate int
 	Path       string
-	Added      time.Time
+	Added      time.Time `sql:"default:now()"`
 }
 
 func NewTrack(path string) (t *Track, err error) {
@@ -59,7 +59,7 @@ type TrackQuery struct {
 	DB *pg.DB
 }
 
-func (tq *TrackQuery) GetTrackByID(id int64) (t *Track, err error) {
+func (tq *TrackQuery) GetTrackById(id int64) (t *Track, err error) {
 	t = new(Track)
 	err = tq.DB.Model(t).Where("track.id = ?", id).Select()
 	if err != nil {
@@ -90,7 +90,7 @@ func (tq *TrackQuery) AddTrack(path string) (t *Track, err error) {
 	return
 }
 
-func (tq *TrackQuery) DeleteTrackByID(id int64) (err error) {
+func (tq *TrackQuery) DeleteTrackById(id int64) (err error) {
 	t := new(Track)
 	_, err = tq.DB.Model(t).Where("track.id = ?", id).Delete()
 	if err != nil {

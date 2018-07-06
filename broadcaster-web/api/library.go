@@ -10,7 +10,8 @@ import (
 	"github.com/ryex/go-broadcaster/shared/models"
 )
 
-func (api *Api) GetLibraryPath(c echo.Context) error {
+// GET /api/library/id/:id
+func (a *Api) GetLibraryPathById(c echo.Context) error {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -21,7 +22,7 @@ func (api *Api) GetLibraryPath(c echo.Context) error {
 	}
 
 	q := models.LibraryPathQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
 
 	libp, err := q.GetLibraryPathByID(id)
@@ -39,13 +40,14 @@ func (api *Api) GetLibraryPath(c echo.Context) error {
 
 }
 
-func (api *Api) PutLibraryPath(c echo.Context) error {
+// POST /api/library
+func (a *Api) PutLibraryPath(c echo.Context) error {
 
 	values, ferr := c.FormParams()
 	fmt.Println(values.Encode(), ferr)
 
 	q := models.LibraryPathQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
 
 	libp, err := q.AddLibraryPath(c.FormValue("path"))
@@ -64,10 +66,11 @@ func (api *Api) PutLibraryPath(c echo.Context) error {
 
 }
 
-func (api *Api) GetLibraryPaths(c echo.Context) error {
+// GET /api/library
+func (a *Api) GetLibraryPaths(c echo.Context) error {
 
 	q := models.LibraryPathQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
 
 	paths, count, err := q.GetLibraryPaths(c.QueryParams())
@@ -88,7 +91,8 @@ func (api *Api) GetLibraryPaths(c echo.Context) error {
 
 }
 
-func (api *Api) DeleteLibraryPath(c echo.Context) error {
+// GELETE /api/library/:id
+func (a *Api) DeleteLibraryPath(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		logutils.Log.Error("cant parse id", err)
@@ -98,7 +102,7 @@ func (api *Api) DeleteLibraryPath(c echo.Context) error {
 	}
 
 	q := models.LibraryPathQuery{
-		DB: api.DB,
+		DB: a.DB,
 	}
 
 	err = q.DeleteLibraryPathByID(id)

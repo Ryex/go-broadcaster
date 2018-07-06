@@ -6,22 +6,25 @@ import (
 	logging "github.com/op/go-logging"
 )
 
-var Log = logging.MustGetLogger("example")
+var Log *logging.Logger
 
 var logFormat = logging.MustStringFormatter(
 	`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
 )
 
-func SetupLogging() {
+func SetupLogging(name string, debug bool) {
+	Log = logging.MustGetLogger("go-boradcaster")
 	logStdout := logging.NewLogBackend(os.Stdout, "", 0)
-	logStderr := logging.NewLogBackend(os.Stderr, "", 0)
 
-	logStderrFormat := logging.NewBackendFormatter(logStderr, logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
-	))
+	logStdoutFormat := logging.NewBackendFormatter(logStdout, logFormat)
 
-	logStderrLeveled := logging.AddModuleLevel(logStderrFormat)
-	logStderrLeveled.SetLevel(logging.ERROR, "")
+	var logLevel logging.Level
+	if logLevel = logging.INFO; debug {
+		logLevel = logging.ERROR
+	}
 
-	logging.SetBackend(logStderrLeveled, logStdout)
+	logStdoutLeveled := logging.AddModuleLevel(logStdoutFormat)
+	logStdoutLeveled.SetLevel(logLevel, "")
+
+	logging.SetBackend(logStdoutLeveled)
 }

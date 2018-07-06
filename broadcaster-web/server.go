@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo"
@@ -35,8 +36,6 @@ import (
 
 func main() {
 
-	logutils.SetupLogging()
-
 	root, _ := os.Getwd()
 	cfgPath := filepath.Join(root, "config.json")
 
@@ -48,14 +47,16 @@ func main() {
 
 	cfgPath, pathErr := filepath.Abs(cfgPath)
 	if pathErr != nil {
-		logutils.Log.Error("could not get absolute path for config")
+		fmt.Println("could not get absolute path for config", pathErr)
 	}
 
-	logutils.Log.Info("Loading config from: ", cfgPath)
+	fmt.Println("Loading config from: ", cfgPath)
 	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
-		logutils.Log.Error("error when loading configuration", err)
+		fmt.Println("Error when loading configuration", err)
 	}
+
+	logutils.SetupLogging("broadcaster-web", cfg.Debug)
 
 	db := pg.Connect(&pg.Options{
 		Addr:     cfg.DBURL + ":" + cfg.DPPort,
@@ -64,16 +65,20 @@ func main() {
 	})
 	defer db.Close()
 
+	if cfg.Debug {
+		SetupDatabaseQueryLogging(db)
+	}
+
 	// TODO get better DB Setup
 	models.CreateSchema(db)
 
-	api := api.Api{DB: db}
+	a := api.Api{DB: db}
 
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 
-	CreateAPIRoutes(e, &api)
+	api.RegisterRoutes(e, &a)
 	CreateStaticRoutes(e)
 
 	data, err := json.MarshalIndent(e.Routes(), "", "  ")
@@ -86,20 +91,6 @@ func main() {
 
 	e.HideBanner = true
 	e.Logger.Fatal(e.Start(":8080"))
-
-}
-
-func CreateAPIRoutes(e *echo.Echo, api *api.Api) {
-	g := e.Group("/api")
-	g.GET("/library", api.GetLibraryPaths)
-	g.GET("/library/:id", api.GetLibraryPath)
-	g.PUT("/library", api.PutLibraryPath)
-	g.DELETE("/library/:id", api.DeleteLibraryPath)
-
-	g.GET("/track/:id", api.GetTrack)
-	g.GET("/tracks", api.GetTracks)
-	g.PUT("/track", api.PutTrack)
-	g.DELETE("/track/:id", api.DeleteTrack)
 
 }
 
@@ -128,4 +119,15 @@ func CreateStaticRoutes(e *echo.Echo) {
 		return nil
 	})
 
+}
+
+func SetupDatabaseQueryLogging(db *pg.DB) {
+	db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
+		query, err := event.FormattedQuery()
+		if err != nil {
+			panic(err)
+		}
+
+		logutils.Log.Debugf("%s %s", time.Since(event.StartTime), query)
+	})
 }
