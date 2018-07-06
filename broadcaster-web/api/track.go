@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-pg/pg/orm"
 	"github.com/labstack/echo"
 	"github.com/ryex/go-broadcaster/shared/logutils"
 	"github.com/ryex/go-broadcaster/shared/models"
@@ -17,38 +16,46 @@ func (api *Api) GetTrack(c echo.Context) error {
 		logutils.Log.Error("Error parsing id", err)
 		return err
 	}
-	track := new(models.Track)
-	track.Id = id
-	dberr := api.DB.Model(track).Where("track.id = ?", id).Select()
-	if dberr != nil {
-		logutils.Log.Error("db query error", dberr)
-		return dberr
+
+	q := models.TrackQuery{
+		DB: api.DB,
+	}
+	t, err := q.GetTrackByID(id)
+
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Responce{
+			Err: err,
+		})
 	}
 
-	return c.JSON(http.StatusOK, H{
-		"track": track,
+	return c.JSON(http.StatusOK, Responce{
+		Data: H{
+			"track": t,
+		},
 	})
 }
 
 func (api *Api) GetTracks(c echo.Context) error {
-	var tracks []models.Track
-
-	q := api.DB.Model(&tracks)
-	q = q.Apply(orm.Pagination(c.QueryParams()))
-
-	count, dberr := q.SelectAndCount()
-
-	if dberr != nil {
-		logutils.Log.Error("db query error", dberr)
-		return dberr
+	q := models.TrackQuery{
+		DB: api.DB,
 	}
 
-	return c.JSON(http.StatusOK, H{
-		"tracks": tracks,
-		"count":  count,
+	tracks, count, err := q.GetTracks(c.QueryParams())
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Responce{
+			Err: err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, Responce{
+		Data: H{
+			"tracks": tracks,
+			"count":  count,
+		},
 	})
 }
 
+// Mostly for debug purposes not really intended for use
 func (api *Api) PutTrack(c echo.Context) error {
 
 	track := new(models.Track)
@@ -116,15 +123,21 @@ func (api *Api) DeleteTrack(c echo.Context) error {
 		return err
 	}
 
-	track := new(models.Track)
-	track.Id = id
-	_, dberr := api.DB.Model(track).Where("track.id = ?", id).Delete()
-	if dberr != nil {
-		logutils.Log.Error("db query error", dberr)
-		return dberr
+	q := models.TrackQuery{
+		DB: api.DB,
 	}
 
-	return c.JSON(http.StatusOK, H{
-		"deleted": id,
+	err = q.DeleteTrackByID(id)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Responce{
+			Err: err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, Responce{
+		Data: H{
+			"deleted": id,
+		},
 	})
 }

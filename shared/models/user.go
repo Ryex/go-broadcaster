@@ -3,11 +3,14 @@ package models
 import (
 	"errors"
 
+	"github.com/go-pg/pg"
+	"github.com/ryex/go-broadcaster/shared/logutils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Role struct {
-	Id          string
+	Id          int64
+	IdStr       string
 	parents     map[string]Role
 	permissions map[string]bool
 }
@@ -17,12 +20,12 @@ type Parents map[string]Role
 
 func NewRole(id string, parents ...Role) *Role {
 	role := &Role{
-		Id:          id,
+		IdStr:       id,
 		parents:     make(Parents),
 		permissions: make(Permissions),
 	}
 	for _, parent := range parents {
-		role.parents[parent.Id] = parent
+		role.parents[parent.IdStr] = parent
 	}
 	return role
 }
@@ -52,7 +55,7 @@ func (r *Role) Permit(p string) bool {
 		return v
 	}
 	//check if any of the parent roles has the permission
-	for k, parent := range r.parents {
+	for _, parent := range r.parents {
 		if parent.Permit(p) {
 			return true
 		}
@@ -69,6 +72,7 @@ func (r *Role) Deny(p string) bool {
 }
 
 type User struct {
+	Id       int64
 	Username string
 	Password string
 	Roles    []Role
@@ -81,6 +85,7 @@ func (u *User) HasPermit(p string) bool {
 			return true
 		}
 	}
+	return false
 }
 
 func (u *User) AllPermit(p string) bool {
@@ -107,4 +112,26 @@ func (u *User) MatchHashPass(pass string) bool {
 		return false
 	}
 	return true
+}
+
+type UserQuery struct {
+	DB *pg.DB
+}
+
+func (uq *UserQuery) GetUserByID(id int64) (u *User, dberr error) {
+	u = new(User)
+	dberr = uq.DB.Model(u).Where("user.id = ?", id).Select()
+	if dberr != nil {
+		logutils.Log.Error("db query error", dberr)
+	}
+	return
+}
+
+func (uq *UserQuery) GetUserByName(name string) (u *User, dberr error) {
+	u = new(User)
+	dberr = uq.DB.Model(u).Where("user.username = ?", name).Select()
+	if dberr != nil {
+		logutils.Log.Error("db query error", dberr)
+	}
+	return
 }
