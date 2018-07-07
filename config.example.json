@@ -8,5 +8,6 @@
   "debug": false,
   "development": false,
   "auth_secret": "OhGodsPleaseChangeMe!",
-  "auth_timeout_hours": 24
+  "auth_timeout_hours": 24,
+  "use_assets_from_disk": false
 }

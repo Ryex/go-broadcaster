@@ -12,7 +12,8 @@
     "test": "npm run unit && npm run e2e",
     "lint": "eslint --ext .js,.vue src test/unit test/e2e/specs",
     "build": "node build/build.js",
-    "builddev": "node build/builddev.js"
+    "builddev": "node build/builddev.js",
+    "godev": "npm run builddev && go build && ./broadcaster-web --config=../config.json"
   },
   "dependencies": {
     "axios": "^0.18.0",

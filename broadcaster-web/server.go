@@ -75,7 +75,7 @@ func main() {
 	a := api.Api{
 		DB:          db,
 		AuthTimeout: time.Hour * time.Duration(cfg.AuthTimeoutHours),
-		Cfg: cfg
+		Cfg:         cfg,
 	}
 
 	e := echo.New()
@@ -83,7 +83,17 @@ func main() {
 	e.Use(middleware.Logger())
 
 	api.RegisterRoutes(e, &a, &cfg)
-	CreateStaticRoutes(e)
+
+	var fs http.FileSystem
+	if !cfg.UseAssetsFromDisk {
+		logutils.Log.Info("Using binary Asset FS")
+		fs = assetFS()
+	} else {
+		logutils.Log.Info("Using Assets form disk")
+		fs = http.Dir("dist")
+	}
+
+	CreateStaticRoutes(e, fs)
 
 	data, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -98,10 +108,10 @@ func main() {
 
 }
 
-func CreateStaticRoutes(e *echo.Echo) {
-	afs := assetFS()
+func CreateStaticRoutes(e *echo.Echo, httpfs http.FileSystem) {
+
 	//
-	fs := http.FileServer(afs)
+	fs := http.FileServer(httpfs)
 	//
 	// e.GET("/", echo.WrapHandler(fs))
 	//
