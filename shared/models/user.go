@@ -33,6 +33,10 @@ func NewRole(id string, parents ...Role) *Role {
 	return role
 }
 
+func (r *Role) Name() string {
+	return r.IdStr
+}
+
 func (r *Role) Assign(p string) error {
 	if p != "" {
 		r.permissions[p] = true
@@ -233,6 +237,14 @@ func (u *User) Update(username string, password string, roles []Role) {
 	u.Username = username
 	u.Password = password
 	u.Roles = roles
+}
+
+func (u *User) GetRoleNames() (names []string) {
+	names = make([]string, len(u.Roles))
+	for i, r := range u.Roles {
+		names[i] = r.Name()
+	}
+	return
 }
 
 type UserQuery struct {

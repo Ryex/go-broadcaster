@@ -72,13 +72,17 @@ func main() {
 	// TODO get better DB Setup
 	models.CreateSchema(db)
 
-	a := api.Api{DB: db}
+	a := api.Api{
+		DB:          db,
+		AuthTimeout: time.Hour * time.Duration(cfg.AuthTimeoutHours),
+		Cfg: cfg
+	}
 
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 
-	api.RegisterRoutes(e, &a)
+	api.RegisterRoutes(e, &a, &cfg)
 	CreateStaticRoutes(e)
 
 	data, err := json.MarshalIndent(e.Routes(), "", "  ")

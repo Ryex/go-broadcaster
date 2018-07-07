@@ -6,14 +6,16 @@ import (
 )
 
 type Config struct {
-	DBURL       string   `json:"db_url"`
-	DPPort      string   `json:"dp_port"`
-	DBDatabase  string   `json:"db_database"`
-	DBUser      string   `json:"db_user"`
-	DBPassword  string   `json:"db_password"`
-	MediaExts   []string `json:"media_exts"`
-	Debug       bool     `json:"debug"`
-	Development bool     `json:development`
+	DBURL            string   `json:"db_url"`
+	DPPort           string   `json:"dp_port"`
+	DBDatabase       string   `json:"db_database"`
+	DBUser           string   `json:"db_user"`
+	DBPassword       string   `json:"db_password"`
+	MediaExts        []string `json:"media_exts"`
+	Debug            bool     `json:"debug"`
+	Development      bool     `json:"development"`
+	AuthSecret       string   `json:"auth_secret"`
+	AuthTimeoutHours int      `json:"auth_timeout_hours"`
 }
 
 func LoadConfig(filename string) (Config, error) {

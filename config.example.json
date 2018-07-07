@@ -6,5 +6,7 @@
 	"db_password": "pgpasstest",
   "media_exts": [".mp3", ".ogg", ".flac", ".aac"],
   "debug": false,
-  "development": false
+  "development": false,
+  "auth_secret": "OhGodsPleaseChangeMe!",
+  "auth_timeout_hours": 24
 }
