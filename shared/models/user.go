@@ -78,6 +78,15 @@ func (r *Role) Deny(p string) bool {
 	return false
 }
 
+func (r *Role) Update(name string, perms []string, parents []Role) {
+	r.IdStr = name
+	r.permissions = make(Permissions)
+	r.parents = parents
+	for _, perm := range perms {
+		r.Assign(perm)
+	}
+}
+
 type RoleQuery struct {
 	DB *pg.DB
 }
@@ -121,12 +130,18 @@ func (rq *RoleQuery) AddRole(name string, perms []string, parents []Role) (r *Ro
 	return
 }
 
-func (rq *RoleQuery) UpdateRole(id int64, name string, perms []string, parents []Role) (r *Role, err error) {
-	r = NewRole(name, parents...)
-	r.Id = id
-	for _, perm := range perms {
-		r.Assign(perm)
+func (rq *RoleQuery) UpdateRoleById(id int64, name string, perms []string, parents []Role) (r *Role, err error) {
+	r, err = rq.GetRoleById(id)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
 	}
+
+	if name == "" {
+		name = r.IdStr
+	}
+
+	r.Update(name, perms, parents)
+
 	err = rq.DB.Update(r)
 	if err != nil {
 		logutils.Log.Error("db query error", err)
@@ -187,6 +202,39 @@ func (u *User) MatchHashPass(pass string) bool {
 	return true
 }
 
+func (u *User) AddRole(r Role) {
+	for _, role := range u.Roles {
+		if r.IdStr == role.IdStr {
+			return
+		}
+	}
+	u.Roles = append(u.Roles, r)
+}
+
+func (u *User) RemoveRole(r Role) {
+
+	delPos := -1
+	for i, role := range u.Roles {
+		if r.IdStr == role.IdStr {
+			delPos = i
+			break
+		}
+	}
+	// if we found a match
+	if delPos >= 0 {
+		// delete
+		u.Roles[delPos] = u.Roles[len(u.Roles)-1]
+		u.Roles = u.Roles[:len(u.Roles)-1]
+	}
+
+}
+
+func (u *User) Update(username string, password string, roles []Role) {
+	u.Username = username
+	u.Password = password
+	u.Roles = roles
+}
+
 type UserQuery struct {
 	DB *pg.DB
 }
@@ -218,9 +266,18 @@ func (uq *UserQuery) DeleteUserById(id int64) (err error) {
 	return
 }
 
-func (uq *UserQuery) AddUser(name string, pass string, roles []Role) (u *User, err error) {
+func (uq *UserQuery) AddUser(name string, pass string, roleStrs []string) (u *User, err error) {
 	if name == "" {
 		err = errors.New("empty username")
+		return
+	}
+
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+
+	roles, err := rq.GetRoles(roleStrs)
+	if err != nil {
 		return
 	}
 
@@ -237,6 +294,229 @@ func (uq *UserQuery) AddUser(name string, pass string, roles []Role) (u *User, e
 	u.Roles = roles
 
 	err = uq.DB.Insert(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UpdateUserById(id int64, name string, pass string, roleStrs []string) (u *User, err error) {
+	u, err = uq.GetUserById(id)
+	if err != nil {
+		return
+	}
+
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+
+	roles, err := rq.GetRoles(roleStrs)
+	if err != nil {
+		return
+	}
+
+	// hash the password so we dont store it plaintext
+	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		logutils.Log.Error("password hashing error", err)
+		return
+	}
+
+	u.Update(name, string(hashpass), roles)
+
+	uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+
+	return
+}
+
+func (uq *UserQuery) UpdateUserByName(name string, pass string, roleStrs []string) (u *User, err error) {
+	u, err = uq.GetUserByName(name)
+	if err != nil {
+		return
+	}
+
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+
+	roles, err := rq.GetRoles(roleStrs)
+	if err != nil {
+		return
+	}
+
+	// hash the password so we dont store it plaintext
+	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		logutils.Log.Error("password hashing error", err)
+		return
+	}
+
+	u.Update(name, string(hashpass), roles)
+
+	uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByIdAddRoleByName(id int64, rName string) (u *User, err error) {
+	u, err = uq.GetUserById(id)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleByName(rName)
+	if err != nil {
+		return
+	}
+	u.AddRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByNameAddRoleByName(name string, rName string) (u *User, err error) {
+	u, err = uq.GetUserByName(name)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleByName(rName)
+	if err != nil {
+		return
+	}
+	u.AddRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByIdRemoveRoleByName(id int64, rName string) (u *User, err error) {
+	u, err = uq.GetUserById(id)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleByName(rName)
+	if err != nil {
+		return
+	}
+	u.RemoveRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByNameRemoveRoleByName(name string, rName string) (u *User, err error) {
+	u, err = uq.GetUserByName(name)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleByName(rName)
+	if err != nil {
+		return
+	}
+	u.RemoveRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByIdAddRoleById(id int64, rid int64) (u *User, err error) {
+	u, err = uq.GetUserById(id)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleById(rid)
+	if err != nil {
+		return
+	}
+	u.AddRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByNameAddRoleById(name string, rid int64) (u *User, err error) {
+	u, err = uq.GetUserByName(name)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleById(rid)
+	if err != nil {
+		return
+	}
+	u.AddRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByIdRemoveRoleById(id int64, rid int64) (u *User, err error) {
+	u, err = uq.GetUserById(id)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleById(rid)
+	if err != nil {
+		return
+	}
+	u.RemoveRole(*r)
+	err = uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+func (uq *UserQuery) UserByNameRemoveRoleById(name string, rid int64) (u *User, err error) {
+	u, err = uq.GetUserByName(name)
+	if err != nil {
+		return
+	}
+	rq := RoleQuery{
+		DB: uq.DB,
+	}
+	r, err := rq.GetRoleById(rid)
+	if err != nil {
+		return
+	}
+	u.RemoveRole(*r)
+	err = uq.DB.Update(u)
 	if err != nil {
 		logutils.Log.Error("db query error", err)
 	}

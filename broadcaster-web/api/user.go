@@ -77,22 +77,11 @@ func (a *Api) AddUser(c echo.Context) error {
 		})
 	}
 
-	rq := models.RoleQuery{
-		DB: a.DB,
-	}
-
-	roles, err := rq.GetRoles(roleStrs)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, Responce{
-			Err: err,
-		})
-	}
-
 	q := models.UserQuery{
 		DB: a.DB,
 	}
 
-	u, err := q.AddUser(name, pass, roles)
+	u, err := q.AddUser(name, pass, roleStrs)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Responce{
@@ -135,6 +124,76 @@ func (a *Api) DeleteUser(c echo.Context) error {
 			"deleted": id,
 		},
 	})
+}
+
+// PUT /api/user/id/:id
+func (a *Api) UpdateUserById(c echo.Context) error {
+	name := c.FormValue("username")
+	pass := c.FormValue("password")
+	roleStrs := strings.Split(c.FormValue("roles"), ",")
+
+	if name == "" {
+		return c.JSON(http.StatusBadRequest, Responce{
+			Err: errors.New("Missing Username"),
+		})
+	}
+
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		logutils.Log.Error("Error parsing id", err)
+		return c.JSON(http.StatusBadRequest, Responce{
+			Err: err,
+		})
+	}
+
+	q := models.UserQuery{
+		DB: a.DB,
+	}
+
+	u, err := q.UpdateUserById(id, name, pass, roleStrs)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Responce{
+			Err: err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, Responce{
+		Data: H{
+			"updated": u,
+		},
+	})
+
+}
+
+// PUT /api/user/name/:name
+func (a *Api) UpdateUserByName(c echo.Context) error {
+	name := c.FormValue("username")
+	pass := c.FormValue("password")
+	roleStrs := strings.Split(c.FormValue("roles"), ",")
+
+	if name == "" {
+		return c.JSON(http.StatusBadRequest, Responce{
+			Err: errors.New("Missing Username"),
+		})
+	}
+
+	q := models.UserQuery{
+		DB: a.DB,
+	}
+
+	u, err := q.UpdateUserByName(name, pass, roleStrs)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Responce{
+			Err: err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, Responce{
+		Data: H{
+			"updated": u,
+		},
+	})
+
 }
 
 // GET /api/role/name/:name
@@ -231,7 +290,7 @@ func (a *Api) AddRole(c echo.Context) error {
 }
 
 // DELETE /api/role/:id
-func (a *Api) DeleteRole(c echo.Context) error {
+func (a *Api) DeleteRoleById(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		logutils.Log.Error("Error parsing id", err)
@@ -260,7 +319,7 @@ func (a *Api) DeleteRole(c echo.Context) error {
 }
 
 // PUT /api/role/:id //can not create
-func (a *Api) UpdateRole(c echo.Context) error {
+func (a *Api) UpdateRoleById(c echo.Context) error {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -274,20 +333,9 @@ func (a *Api) UpdateRole(c echo.Context) error {
 		DB: a.DB,
 	}
 
-	r, err := rq.GetRoleById(id)
-	if err != nil {
-		return c.JSON(http.StatusNotFound, Responce{
-			Err: err,
-		})
-	}
-
 	name := c.FormValue("name")
 	perms := strings.Split(c.FormValue("permissions"), ",")
 	parentStrs := strings.Split(c.FormValue("parents"), ",")
-
-	if name == "" {
-		name = r.IdStr
-	}
 
 	var parents []models.Role
 
@@ -300,7 +348,7 @@ func (a *Api) UpdateRole(c echo.Context) error {
 		}
 	}
 
-	r, err = rq.UpdateRole(r.Id, name, perms, parents)
+	r, err := rq.UpdateRoleById(id, name, perms, parents)
 
 	if err != nil {
 		return c.JSON(http.StatusNotFound, Responce{

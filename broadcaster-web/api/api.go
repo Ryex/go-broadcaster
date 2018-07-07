@@ -25,13 +25,15 @@ func RegisterRoutes(e *echo.Echo, a *Api) {
 	g.GET("/user/name/:name", a.GetUserByName)
 	g.POST("/user", a.AddUser)
 	g.DELETE("/user/:id", a.DeleteUser)
+	g.PUT("/user/id/:id", a.UpdateUserById)
+	g.PUT("/user/name/:name", a.UpdateUserByName)
 
 	// Role
 	g.GET("/role/id/:id", a.GetRoleById)
 	g.GET("/role/name/:name", a.GetRoleByName)
 	g.POST("/role", a.AddRole)
-	g.DELETE("/role/:id", a.DeleteRole)
-	g.PUT("/role:/id", a.UpdateRole)
+	g.DELETE("/role/:id", a.DeleteRoleById)
+	g.PUT("/role:/id", a.UpdateRoleById)
 
 	// Library Path
 	g.GET("/library", a.GetLibraryPaths)
