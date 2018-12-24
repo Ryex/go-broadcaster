@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/CloudyKit/jet"
 	"github.com/go-pg/pg"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
+
+	"github.com/ryex/go-broadcaster/go-broadcaster-web/api"
 	"github.com/ryex/go-broadcaster/shared/config"
 	"github.com/ryex/go-broadcaster/shared/logutils"
 	"github.com/ryex/go-broadcaster/shared/models"
@@ -18,7 +19,7 @@ import (
 // "fmt"
 // "log"
 // "os"
-// "strconv"
+// "strconv"github.com/dgrijalva/jwt-go
 // "time"
 // "net/http"
 //
@@ -26,18 +27,12 @@ import (
 // "github.com/gorilla/mux"
 //"github.com/lib/pq"
 
-type Env struct {
-	DB   *pg.DB
-	View *jet.Set
-}
-
 func main() {
 
 	logutils.SetupLogging()
 
 	root, _ := os.Getwd()
 	cfgPath := filepath.Join(root, "config.json")
-	view := jet.NewHTMLSet(filepath.Join(root, "views"))
 
 	cfgPtr := flag.String("config", cfgPath, "Path to the config.json file")
 
@@ -66,17 +61,29 @@ func main() {
 	// TODO get better DB Setup
 	models.CreateSchema(db)
 
-	env := Env{DB: db, View: view}
+	api := api.Api{DB: db}
 
-	// TODO  remove after development
-	env.View.SetDevelopmentMode(true)
+	e := echo.New()
 
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/library", LibraryHandeler(&env))
+	e.Use(middleware.Logger())
+
+	CreateAPIRoutes(e, &api)
 
 	logutils.Log.Info("running at localhost:8080")
-	if err := http.ListenAndServe(":8080", router); err != nil {
-		panic(err)
-	}
 
+	e.HideBanner = true
+	e.Logger.Fatal(e.Start(":8080"))
+
+}
+
+func CreateAPIRoutes(e *echo.Echo, api *api.Api) {
+	e.GET("/library", api.GetLibraryPaths)
+	e.GET("/library/:id", api.GetLibraryPath)
+	e.PUT("/library", api.PutLibraryPath)
+	e.DELETE("/library/:id", api.DeleteLibraryPath)
+
+	e.GET("/track/:id", api.GetTrack)
+	e.GET("/tracks", api.GetTracks)
+	e.PUT("/track", api.PutTrack)
+	e.DELETE("/track/:id", api.DeleteTrack)
 }

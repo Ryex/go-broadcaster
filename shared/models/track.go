@@ -17,6 +17,7 @@ type Track struct {
 	Channels   int
 	Samplerate int
 	Path       string
+	Added      time.Time
 }
 
 func (t Track) String() string {
