@@ -11,6 +11,7 @@ type Config struct {
 	DBUser     string   `json:"DBUser"`
 	DBPassword string   `json:"DBPassword"`
 	MediaExts  []string `json:"MediaExts"`
+	Debug      bool     `json:Debug`
 }
 
 func LoadConfig(filename string) (Config, error) {

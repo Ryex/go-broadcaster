@@ -3,5 +3,6 @@
 	"DPPort":  "5432",
 	"DBUser":   "postgres",
 	"DBPassword": "pgpasstest",
-  "MediaExts": [".mp3", ".ogg", ".flac", ".aac"]
+  "MediaExts": [".mp3", ".ogg", ".flac", ".aac"],
+  "Debug": false
 }
