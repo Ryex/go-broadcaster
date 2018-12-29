@@ -11,6 +11,28 @@ import (
 	"github.com/ryex/go-broadcaster/shared/models"
 )
 
+
+// GET /api/users
+func (a *Api) GetUsers(c echo.Context) error {
+	q := models.UserQuery{
+		DB: a.DB,
+	}
+
+	users, count, err := q.GetUsers(c.QueryParams())
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Responce{
+			Err: err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, Responce{
+		Data: H{
+			"users": users,
+			"count": count,
+		},
+	})
+}
+
 // GET /api/user/id/:id
 func (a *Api) GetUserById(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)

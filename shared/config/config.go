@@ -7,7 +7,7 @@ import (
 
 type Config struct {
 	DBURL             string   `json:"db_url"`
-	DPPort            string   `json:"dp_port"`
+	DPPort            string   `json:"db_port"`
 	DBDatabase        string   `json:"db_database"`
 	DBUser            string   `json:"db_user"`
 	DBPassword        string   `json:"db_password"`

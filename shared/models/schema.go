@@ -7,6 +7,8 @@ func CreateSchema(db *pg.DB) error {
 	models := []interface{}{
 		(*LibraryPath)(nil),
 		(*Track)(nil),
+		(*User)(nil),
+		(*Role)(nil),
 	}
 
 	for _, model := range models {

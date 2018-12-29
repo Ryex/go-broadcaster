@@ -37,6 +37,7 @@ func RegisterRoutes(e *echo.Echo, a *Api, cfg *config.Config) {
 	g.GET("/authvalid", a.AuthValid)
 
 	// User
+	g.GET("/user", a.GetUsers)
 	g.GET("/user/id/:id", a.GetUserById)
 	g.GET("/user/name/:name", a.GetUserByName)
 	g.POST("/user", a.AddUser)

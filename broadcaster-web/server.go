@@ -57,9 +57,11 @@ func main() {
 	}
 
 	logutils.SetupLogging("broadcaster-web", cfg.Debug)
+	logutils.Log.Info(fmt.Sprintf("Useing config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{
 		Addr:     cfg.DBURL + ":" + cfg.DPPort,
+		Database: cfg.DBDatabase,
 		User:     cfg.DBUser,
 		Password: cfg.DBPassword,
 	})
@@ -70,7 +72,11 @@ func main() {
 	}
 
 	// TODO get better DB Setup
-	models.CreateSchema(db)
+	logutils.Log.Info("Setting up database Schema")
+	schemaerr := models.CreateSchema(db)
+	if (schemaerr != nil) {
+		logutils.Log.Error("Error setting up database Schema", schemaerr)
+	}
 
 	a := api.Api{
 		DB:          db,

@@ -3,8 +3,10 @@ package models
 import (
 	"errors"
 	"time"
+	"net/url"
 
 	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/ryex/go-broadcaster/shared/logutils"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -249,6 +251,16 @@ func (u *User) GetRoleNames() (names []string) {
 
 type UserQuery struct {
 	DB *pg.DB
+}
+
+func (uq *UserQuery) GetUsers(queryValues url.Values) (users []User, count int, err error) {
+	q := uq.DB.Model(&users)
+	count, err = q.Apply(orm.Pagination(queryValues)).Column(
+			"id", "username", "roles", "created_at").SelectAndCount()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
 }
 
 func (uq *UserQuery) GetUserById(id int64) (u *User, err error) {

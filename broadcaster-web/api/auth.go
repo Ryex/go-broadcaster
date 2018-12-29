@@ -27,10 +27,12 @@ func (a *Api) Login(c echo.Context) error {
 		token := jwt.New(jwt.SigningMethodHS256)
 
 		// Set claims
+		now := time.Now()
 		claims := token.Claims.(jwt.MapClaims)
 		claims["name"] = u.Username
 		claims["roles"] = u.GetRoleNames()
-		claims["exp"] = time.Now().Add(a.AuthTimeout).Unix()
+		claims["ish"] = now.Unix()
+		claims["exp"] = now.Add(a.AuthTimeout).Unix()
 
 		// Generate encoded token and send it as response.
 		t, err := token.SignedString([]byte(a.Cfg.AuthSecret))
