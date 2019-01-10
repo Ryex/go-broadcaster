@@ -7,6 +7,7 @@ import (
 	"github.com/ryex/go-broadcaster/internal/logutils"
 )
 
+// StringInSlice tests if a string exists in a list of strings
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -16,8 +17,11 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+// SearchFunc is A function type for ccall backs when walking a Directory
 type SearchFunc func(path string) error
 
+// WalkSearch walks a directory from the root looking for files that end with
+// one of the provided extensions, then call the cb  SearchFunc
 func WalkSearch(root string, extensions []string, cb SearchFunc) error {
 	rootPath, aerr := filepath.Abs(root)
 	if aerr != nil {
