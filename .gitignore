@@ -13,7 +13,7 @@
 
 #test config
 config.json
-vender/*
+vendor/*
 .ftpconfig
 
 broadcaster-web/broadcaster-web
