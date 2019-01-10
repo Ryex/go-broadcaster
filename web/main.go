@@ -7,12 +7,12 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/gobuffalo/packr"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
@@ -33,6 +33,11 @@ import (
 // "github.com/dhowden/tag"
 // "github.com/gorilla/mux"
 //"github.com/lib/pq"
+
+const usageText = `This runs a http server for the API of go-broadcaster
+Usage:
+  webapi [-config path/to/config.json]
+`
 
 func main() {
 
@@ -90,16 +95,9 @@ func main() {
 
 	api.RegisterRoutes(e, &a, &cfg)
 
-	var fs http.FileSystem
-	if !cfg.UseAssetsFromDisk {
-		logutils.Log.Info("Using binary Asset FS")
-		fs = assetFS()
-	} else {
-		logutils.Log.Info("Using Assets form disk")
-		fs = http.Dir("dist")
-	}
+	box := packr.NewBox("./templates")
 
-	CreateStaticRoutes(e, fs)
+	CreateStaticRoutes(e, box)
 
 	data, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -114,40 +112,34 @@ func main() {
 
 }
 
-func CreateStaticRoutes(e *echo.Echo, httpfs http.FileSystem) {
+func usage() {
+	fmt.Print(usageText)
+	flag.PrintDefaults()
+	os.Exit(2)
+}
 
-	//
-	fs := http.FileServer(httpfs)
-	//
-	// e.GET("/", echo.WrapHandler(fs))
-	//
-	// e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", fs)))
-	//fs := http.FileServer(http.Dir("dist"))
-	e.GET("/static/*", func(c echo.Context) error {
-		r := c.Request()
-		w := c.Response().Writer
-		fmt.Println(r.URL.Path)
-		fs.ServeHTTP(w, r)
-		return nil
-	})
-	e.GET("/*", func(c echo.Context) error {
-		r := c.Request()
-		w := c.Response().Writer
-		fmt.Println(r.URL.Path)
-		r.URL.Path = "/"
-		fs.ServeHTTP(w, r)
-		return nil
-	})
+func errorf(s string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, s+"\n", args...)
+}
 
+func exitf(s string, args ...interface{}) {
+	errorf(s, args...)
+	os.Exit(1)
+}
+
+type dbLogger struct{}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {}
+
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+	query, err := q.FormattedQuery()
+	if err != nil {
+		panic(err)
+	}
+
+	logutils.Log.Debugf("%s", query)
 }
 
 func SetupDatabaseQueryLogging(db *pg.DB) {
-	db.AddQueryHook(func(event *pg.QueryEvent) {
-		query, err := event.FormattedQuery()
-		if err != nil {
-			panic(err)
-		}
-
-		logutils.Log.Debugf("%s %s", time.Since(event.StartTime), query)
-	})
+	db.AddQueryHook(dbLogger{})
 }
