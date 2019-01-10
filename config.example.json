@@ -1,8 +1,12 @@
 {
-  "DBURL":  "localhost",
-	"DPPort":  "5432",
-	"DBUser":   "postgres",
-	"DBPassword": "pgpasstest",
-  "MediaExts": [".mp3", ".ogg", ".flac", ".aac"],
-  "Debug": false
+  "db_url":  "localhost",
+	"db_port":  "5432",
+  "db_database": "go_broadcaster",
+	"db_user":   "postgres",
+	"db_password": "pgpasstest",
+  "media_exts": [".mp3", ".ogg", ".flac", ".aac"],
+  "debug": false,
+  "development": false,
+  "auth_secret": "OhGodsPleaseChangeMe!",
+  "auth_timeout_hours": 24
 }

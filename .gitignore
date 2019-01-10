@@ -13,8 +13,32 @@
 
 #test config
 config.json
-vender/*
+vendor/*
 .ftpconfig
 
-go-broadcaster-web/go-broadcaster-web
+broadcaster-web/broadcaster-web
 media-monitor/media-monitor
+
+broadcaster-web/routes.json
+
+*node_modules/*
+
+*package-lock.json
+
+web/dist/
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+web/test/unit/coverage/
+web/test/e2e/reports/
+web/selenium-debug.log
+
+*.lock
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
