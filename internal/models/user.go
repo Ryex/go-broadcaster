@@ -2,13 +2,13 @@ package models
 
 import (
 	"errors"
-	"time"
 	"net/url"
+	"time"
 
 	"github.com/go-pg/pg"
 	//"github.com/go-pg/pg/orm"
 	"github.com/go-pg/pg/urlvalues"
-	"github.com/ryex/go-broadcaster/pkg/logutils"
+	"github.com/ryex/go-broadcaster/internal/logutils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -259,7 +259,7 @@ func (uq *UserQuery) GetUsers(queryValues url.Values) (users []User, count int, 
 	err = urlvalues.Decode(queryValues, pagervalues)
 	q := uq.DB.Model(&users)
 	count, err = q.Apply(urlvalues.Pagination(pagervalues)).Column(
-			"id", "username", "roles", "created_at").SelectAndCount()
+		"id", "username", "roles", "created_at").SelectAndCount()
 	if err != nil {
 		logutils.Log.Error("db query error", err)
 	}

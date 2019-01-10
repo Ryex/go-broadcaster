@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ryex/go-broadcaster/pkg/logutils"
+	"github.com/ryex/go-broadcaster/internal/logutils"
 )
 
 func StringInSlice(a string, list []string) bool {

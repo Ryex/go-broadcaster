@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo"
-	"github.com/ryex/go-broadcaster/pkg/logutils"
-	"github.com/ryex/go-broadcaster/pkg/models"
+	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/models"
 )
 
 // GET /api/library/id/:id

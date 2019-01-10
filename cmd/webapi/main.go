@@ -16,10 +16,10 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
-	"github.com/ryex/go-broadcaster/pkg/api"
-	"github.com/ryex/go-broadcaster/pkg/config"
-	"github.com/ryex/go-broadcaster/pkg/logutils"
-	"github.com/ryex/go-broadcaster/pkg/models"
+	"github.com/ryex/go-broadcaster/internal/api"
+	"github.com/ryex/go-broadcaster/internal/config"
+	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/models"
 )
 
 // "encoding/json"
@@ -74,7 +74,7 @@ func main() {
 	// TODO get better DB Setup
 	logutils.Log.Info("Setting up database Schema")
 	schemaerr := models.CreateSchema(db)
-	if (schemaerr != nil) {
+	if schemaerr != nil {
 		logutils.Log.Error("Error setting up database Schema", schemaerr)
 	}
 

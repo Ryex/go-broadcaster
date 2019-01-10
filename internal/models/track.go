@@ -9,7 +9,7 @@ import (
 	"github.com/go-pg/pg"
 	//"github.com/go-pg/pg/orm"
 	"github.com/go-pg/pg/urlvalues"
-	"github.com/ryex/go-broadcaster/pkg/logutils"
+	"github.com/ryex/go-broadcaster/internal/logutils"
 	taglib "github.com/wtolson/go-taglib"
 )
 

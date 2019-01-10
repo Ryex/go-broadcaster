@@ -6,7 +6,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
-	"github.com/ryex/go-broadcaster/pkg/models"
+	"github.com/ryex/go-broadcaster/internal/models"
 )
 
 // POST /auth

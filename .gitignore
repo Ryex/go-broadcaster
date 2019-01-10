@@ -33,7 +33,7 @@ web/test/unit/coverage/
 web/test/e2e/reports/
 web/selenium-debug.log
 
-Gopkg.lock
+*.lock
 
 # Editor directories and files
 .idea

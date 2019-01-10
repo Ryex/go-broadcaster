@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg"
-	"github.com/ryex/go-broadcaster/pkg/config"
-	"github.com/ryex/go-broadcaster/pkg/logutils"
-	"github.com/ryex/go-broadcaster/pkg/models"
+	"github.com/ryex/go-broadcaster/internal/config"
+	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/models"
 	taglib "github.com/wtolson/go-taglib"
 )
 
