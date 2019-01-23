@@ -18,9 +18,9 @@ build: mediamonitor web
 mediamonitor: _godeps
 	$(GO) build -o ./bin/media-monitor ./cmd/media-monitor
 
-web: _webserver
+web: webserver
 
-_webserver: _godeps _webclient
+webserver: _godeps webclient
 ifneq ($(DEVELOPMENT), yes)
 	$(PACKR)
 endif
@@ -30,7 +30,7 @@ ifneq ($(DEVELOPMENT), yes)
 endif
 	cp -r ./web/dist ./bin
 
-_webclient: _npmdeps
+webclient: _npmdeps
 ifeq ($(DEVELOPMENT), yes)
 	 cd ./web && $(NPMRUN) devbuild
 else
