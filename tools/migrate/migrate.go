@@ -1,4 +1,4 @@
-package main
+package migrate
 
 import (
 	"flag"
@@ -17,6 +17,7 @@ const usageText = `This program runs command on the db. Supported commands are:
   - up - runs all available migrations.
   - up [target] - runs available migrations up to the target one.
   - down - reverts last migration.
+	- create <description> - creates a new migration from a template, auto detects version
   - reset - reverts all migrations.
   - version - prints current db version.
   - set_version [version] - sets db version without running migrations.
@@ -51,9 +52,12 @@ func main() {
 	logutils.Log.Info(fmt.Sprintf("Useing config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{
-		User:     "postgres",
-		Database: "pg_migrations_example",
+		Addr:     cfg.DBURL + ":" + cfg.DPPort,
+		Database: cfg.DBDatabase,
+		User:     cfg.DBUser,
+		Password: cfg.DBPassword,
 	})
+	defer db.Close()
 
 	oldVersion, newVersion, err := migrations.Run(db, flag.Args()...)
 	if err != nil {

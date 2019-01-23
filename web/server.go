@@ -95,7 +95,7 @@ func main() {
 
 	api.RegisterRoutes(e, &a, &cfg)
 
-	box := packr.NewBox("./templates")
+	box := packr.NewBox("./dist")
 
 	CreateStaticRoutes(e, box)
 
