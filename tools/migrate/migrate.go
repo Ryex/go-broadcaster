@@ -48,8 +48,8 @@ func main() {
 		fmt.Println("Error when loading configuration", err)
 	}
 
-	logutils.SetupLogging("broadcaster-web", cfg.Debug)
-	logutils.Log.Info(fmt.Sprintf("Useing config: %+v", cfg))
+	logutils.SetupLogging("migrations", cfg.Debug)
+	logutils.Log.Info(fmt.Sprintf("Using config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{
 		Addr:     cfg.DBURL + ":" + cfg.DPPort,

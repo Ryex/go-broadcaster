@@ -13,7 +13,7 @@ var logFormat = logging.MustStringFormatter(
 )
 
 func SetupLogging(name string, debug bool) {
-	Log = logging.MustGetLogger("go-boradcaster")
+	Log = logging.MustGetLogger(name)
 	logStdout := logging.NewLogBackend(os.Stdout, "", 0)
 
 	logStdoutFormat := logging.NewBackendFormatter(logStdout, logFormat)

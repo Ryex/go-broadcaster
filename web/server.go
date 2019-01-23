@@ -62,7 +62,7 @@ func main() {
 	}
 
 	logutils.SetupLogging("broadcaster-web", cfg.Debug)
-	logutils.Log.Info(fmt.Sprintf("Useing config: %+v", cfg))
+	logutils.Log.Info(fmt.Sprintf("Using config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{
 		Addr:     cfg.DBURL + ":" + cfg.DPPort,
