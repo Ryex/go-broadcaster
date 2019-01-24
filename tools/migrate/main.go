@@ -17,12 +17,13 @@ const usageText = `This program runs command on the db. Supported commands are:
   - up - runs all available migrations.
   - up [target] - runs available migrations up to the target one.
   - down - reverts last migration.
-	- create <description> - creates a new migration from a template, auto detects version
+  - create <description> - creates a new migration from a template, auto detects version
   - reset - reverts all migrations.
   - version - prints current db version.
   - set_version [version] - sets db version without running migrations.
 Usage:
-  go run *.go <command> [args] [-config path/to/config.json]
+  go run *.go [-config path/to/config.json] <command> [cmdargs]
+Arguments:
 `
 
 func main() {
@@ -34,6 +35,11 @@ func main() {
 	cfgPtr := flag.String("config", cfgPath, "Path to the config.json file")
 
 	flag.Parse()
+
+	if flag.NArg() < 1 {
+		fmt.Println("Error: Must provide at least one command")
+		usage()
+	}
 
 	cfgPath = *cfgPtr
 

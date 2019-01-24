@@ -1,27 +1,72 @@
 package models
 
-import "github.com/go-pg/pg"
-import "github.com/go-pg/pg/orm"
+import (
+	"fmt"
+	"reflect"
 
-func CreateSchema(db *pg.DB) error {
+	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
+)
 
-	models := []interface{}{
-		(*LibraryPath)(nil),
-		(*Track)(nil),
-		(*User)(nil),
-		(*Role)(nil),
-	}
+// Models is a slice listing all modles present for use in Schema operations
+var Models = []interface{}{
+	(*LibraryPath)(nil),
+	(*Track)(nil),
+	(*User)(nil),
+	(*Role)(nil),
+}
 
-	table_opts := new(orm.CreateTableOptions)
-	table_opts.FKConstraints = true
-	table_opts.IfNotExists = true
+// CreateSchema creates the database schema useing the go-pg  modles listed
+// in the exported Modles slice.
+// - db - the databse connection
+// - ifne - should the IfNotExists constrant be used in the orm.CreateTableOptions
+func CreateSchema(db *pg.DB, ifne bool) error {
 
-	for _, model := range models {
-		err := db.CreateTable(model, table_opts)
+	tableOpts := new(orm.CreateTableOptions)
+	tableOpts.FKConstraints = true
+	tableOpts.IfNotExists = ifne
+
+	for _, model := range Models {
+		fmt.Printf("Creating table for model %s\n", reflect.TypeOf(model).Elem().Name())
+		err := db.CreateTable(model, tableOpts)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// DropSchema drops the tables for all models listed in the
+// exported Modles slice.
+// - db - the database connection
+// - ife - should the IfExists constrant be used in the orm.DropTableOptions
+// - cascade - should the Cascade option be used in the orm.DropTableOptions
+func DropSchema(db *pg.DB, ife bool, cascade bool) error {
+
+	tableOpts := new(orm.DropTableOptions)
+	tableOpts.IfExists = ife
+	tableOpts.Cascade = cascade
+
+	for _, model := range Models {
+		fmt.Printf("Droping table for model %s\n", reflect.TypeOf(model).Elem().Name())
+		err := db.DropTable(model, tableOpts)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ModelNames returns a list of the names of the
+// models in the exported Models slice
+func ModelNames() []string {
+	names := make([]string, len(Models))
+	for i, model := range Models {
+		t := reflect.TypeOf(model)
+		//fmt.Printf("%s, %s\n", t.Elem().Name(), t.Name())
+		names[i] = t.Elem().Name()
+	}
+	return names
 }

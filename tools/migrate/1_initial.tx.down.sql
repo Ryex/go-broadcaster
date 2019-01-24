@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS "library_paths";
+DROP TABLE IF EXISTS "tracks";
+DROP TABLE IF EXISTS "users";
+DROP TABLE IF EXISTS "roles";

@@ -22,9 +22,11 @@ func LoadConfig(filename string) (Config, error) {
 
 	cfg := Config{}
 	file, err := os.Open(filename)
+
 	if err != nil {
 		return cfg, err
 	}
+	defer file.Close()
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&cfg)
 	return cfg, err
