@@ -11,7 +11,7 @@ import (
 )
 
 // GET /api/library/id/:id
-func (a *Api) GetLibraryPathById(c echo.Context) error {
+func (a *Api) GetLibraryPathByID(c echo.Context) error {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

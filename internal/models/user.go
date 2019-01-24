@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -14,10 +15,10 @@ import (
 
 // Role is a struct for holding user rolle Permissions.
 type Role struct {
-	Id          int64
-	IdStr       string `sql:",unique"`
-	parents     []Role
-	permissions map[string]bool
+	ID      int64
+	IDStr   string `sql:",unique"`
+	Parents []Role
+	Perms   map[string]bool
 }
 
 // Permissions is a simple type of strings mapped to bools.
@@ -25,39 +26,53 @@ type Permissions map[string]bool
 
 // NewRole consturcts a new Role.
 // Usage: role := NewRole("rolename", ParentRole1, ParentRole2, ...)
-func NewRole(id string, parents ...Role) *Role {
+func NewRole(id string, Parents ...Role) *Role {
 	role := &Role{
-		IdStr:       id,
-		permissions: make(Permissions),
+		IDStr: id,
+		Perms: make(Permissions),
 	}
-	for _, parent := range parents {
+	for _, parent := range Parents {
 		// can't get a role parented to itself
-		if parent.IdStr == id {
+		if parent.IDStr == id {
 			continue
 		}
-		role.parents = append(role.parents, parent)
+		role.Parents = append(role.Parents, parent)
 	}
 	return role
 }
 
 // Name returns the Role's name.
 func (r *Role) Name() string {
-	return r.IdStr
+	return r.IDStr
 }
 
 // Assign grants a permission to the role.
 func (r *Role) Assign(p string) error {
 	if p != "" {
-		r.permissions[p] = true
+		r.Perms[p] = true
 		return nil
 	}
 	return errors.New("empty permission")
 }
 
-// Revoke removes a permission form a role.
+// Remove removes a permission from a role.
+func (r *Role) Remove(p string) error {
+	if p != "" {
+		_, ok := r.Perms[p]
+		if ok {
+			delete(r.Perms, p)
+		} else {
+			return errors.New("permission not assigned")
+		}
+		return nil
+	}
+	return errors.New("empty permission")
+}
+
+// Revoke revokes permission from a role.
 func (r *Role) Revoke(p string) error {
 	if p != "" {
-		r.permissions[p] = false
+		r.Perms[p] = false
 		return nil
 	}
 	return errors.New("empty permission")
@@ -68,13 +83,13 @@ func (r *Role) Revoke(p string) error {
 // returns false
 func (r *Role) Permit(p string) bool {
 	//check is this role has the permission
-	if v, ok := r.permissions[p]; ok {
+	if v, ok := r.Perms[p]; ok {
 		return v
 	}
 	//check if any of the parent roles has the permission
-	for _, parent := range r.parents {
+	for _, parent := range r.Parents {
 		// sanity check to prevent recusion should the wworst happen
-		if parent.IdStr == r.IdStr {
+		if parent.IDStr == r.IDStr {
 			continue
 		}
 		if parent.Permit(p) {
@@ -86,7 +101,7 @@ func (r *Role) Permit(p string) bool {
 
 // Deny checks if THIS role (parents ignored) has the permission revoked
 func (r *Role) Deny(p string) bool {
-	if v, ok := r.permissions[p]; ok {
+	if v, ok := r.Perms[p]; ok {
 		return !v
 	}
 	return false
@@ -94,12 +109,37 @@ func (r *Role) Deny(p string) bool {
 
 // Update updates all the information for a role
 func (r *Role) Update(name string, perms []string, parents []Role) {
-	r.IdStr = name
-	r.permissions = make(Permissions)
-	r.parents = parents
+	r.IDStr = name
+	r.Perms = make(Permissions)
+	r.Parents = parents
 	for _, perm := range perms {
 		r.Assign(perm)
 	}
+}
+
+// AddParent adds the passed role as a parent of this role
+func (r *Role) AddParent(p Role) {
+	r.Parents = append(r.Parents, p)
+}
+
+// RemoveParent removcs a parent role form this role
+func (r *Role) RemoveParent(p Role) (err error) {
+	//find index r
+	deli := -1
+	for i, parent := range r.Parents {
+		if parent.IDStr == p.IDStr {
+			deli = i
+			break
+		}
+	}
+	if deli < 0 {
+		err = fmt.Errorf("Role does not have parent %s", p.IDStr)
+		return
+	}
+	// append the slice up to the removal index
+	// with all elements pased removal index
+	r.Parents = append(r.Parents[:deli], r.Parents[deli+1:]...)
+	return nil
 }
 
 // RoleQuery handles Role model queries on the database
@@ -127,12 +167,27 @@ func (rq *RoleQuery) GetRoleByID(id int64) (r *Role, err error) {
 	return
 }
 
-// GetRoles returns a number of roles from the database by their names,
-func (rq *RoleQuery) GetRoles(names []string) (roles []Role, err error) {
-	roles = make([]Role, len(names))
-	err = rq.DB.Model(roles).Where("role.id_str in (?)", pg.In(names)).Select()
+// GetRoles returns users from the Database
+// support pagination
+func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count int, err error) {
+	//var pagervalues urlvalues.Values
+	//err = urlvalues.Decode(queryValues, pagervalues)
+	q := rq.DB.Model(&roles)
+	count, err = q.Apply(urlvalues.Pagination(queryValues)).SelectAndCount()
 	if err != nil {
 		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+// GetRolesByName returns a number of roles from the database by their names,
+func (rq *RoleQuery) GetRolesByName(names []string) (roles []Role, err error) {
+	roles = make([]Role, len(names))
+	if len(roles) > 0 {
+		err = rq.DB.Model(roles).Where("role.id_str in (?)", pg.In(names)).Select()
+		if err != nil {
+			logutils.Log.Error("db query error: %s", err)
+		}
 	}
 	return
 }
@@ -150,6 +205,16 @@ func (rq *RoleQuery) CreateRole(name string, perms []string, parents []Role) (r 
 	return
 }
 
+// Update uses the model to update the corasponding roel in the databases
+func (rq *RoleQuery) Update(role *Role) (r *Role, err error) {
+	r = role
+	err = rq.DB.Update(r)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
 // UpdateRoleByID updates a role's information in the database by it's ID
 func (rq *RoleQuery) UpdateRoleByID(id int64, name string, perms []string, parents []Role) (r *Role, err error) {
 	r, err = rq.GetRoleByID(id)
@@ -158,7 +223,7 @@ func (rq *RoleQuery) UpdateRoleByID(id int64, name string, perms []string, paren
 	}
 
 	if name == "" {
-		name = r.IdStr
+		name = r.IDStr
 	}
 
 	r.Update(name, perms, parents)
@@ -232,7 +297,7 @@ func (u *User) MatchHashPass(pass string) bool {
 // AddRole adds a role to the user
 func (u *User) AddRole(r Role) {
 	for _, role := range u.Roles {
-		if r.IdStr == role.IdStr {
+		if r.IDStr == role.IDStr {
 			return
 		}
 	}
@@ -244,7 +309,7 @@ func (u *User) RemoveRole(r Role) {
 
 	delPos := -1
 	for i, role := range u.Roles {
-		if r.IdStr == role.IdStr {
+		if r.IDStr == role.IDStr {
 			delPos = i
 			break
 		}
@@ -263,6 +328,20 @@ func (u *User) Update(username string, password string, roles []Role) {
 	u.Username = username
 	u.Password = password
 	u.Roles = roles
+}
+
+// UpdatePassword takes a unhashed password and updates the user model with
+// a new hashed version
+func (u *User) UpdatePassword(pass string) (err error) {
+	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		logutils.Log.Error("password hashing error", err)
+		return
+	}
+
+	u.Password = string(hashpass)
+
+	return
 }
 
 // GetRoleNames returns a list of all the role names the user has
@@ -334,7 +413,7 @@ func (uq *UserQuery) CreateUser(name string, pass string, roleStrs []string) (u 
 		DB: uq.DB,
 	}
 
-	roles, err := rq.GetRoles(roleStrs)
+	roles, err := rq.GetRolesByName(roleStrs)
 	if err != nil {
 		return
 	}
@@ -358,6 +437,17 @@ func (uq *UserQuery) CreateUser(name string, pass string, roleStrs []string) (u 
 	return
 }
 
+// Update uses a used model to update the corasponding user in the databases
+func (uq *UserQuery) Update(user *User) (u *User, err error) {
+	u = user
+	uq.DB.Update(u)
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+
+	return
+}
+
 // UpdateUserByID updates a user's information by ID
 func (uq *UserQuery) UpdateUserByID(id int64, name string, pass string, roleStrs []string) (u *User, err error) {
 	u, err = uq.GetUserByID(id)
@@ -369,7 +459,7 @@ func (uq *UserQuery) UpdateUserByID(id int64, name string, pass string, roleStrs
 		DB: uq.DB,
 	}
 
-	roles, err := rq.GetRoles(roleStrs)
+	roles, err := rq.GetRolesByName(roleStrs)
 	if err != nil {
 		return
 	}
@@ -402,7 +492,7 @@ func (uq *UserQuery) UpdateUserByName(name string, pass string, roleStrs []strin
 		DB: uq.DB,
 	}
 
-	roles, err := rq.GetRoles(roleStrs)
+	roles, err := rq.GetRolesByName(roleStrs)
 	if err != nil {
 		return
 	}

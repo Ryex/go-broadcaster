@@ -11,7 +11,7 @@ import (
 )
 
 // GET /api/track/id/:id
-func (a *Api) GetTrackById(c echo.Context) error {
+func (a *Api) GetTrackByID(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		logutils.Log.Error("Error parsing id", err)
@@ -21,7 +21,7 @@ func (a *Api) GetTrackById(c echo.Context) error {
 	q := models.TrackQuery{
 		DB: a.DB,
 	}
-	t, err := q.GetTrackById(id)
+	t, err := q.GetTrackByID(id)
 
 	if err != nil {
 		return c.JSON(http.StatusNotFound, Responce{
@@ -133,7 +133,7 @@ func (a *Api) DeleteTrack(c echo.Context) error {
 		DB: a.DB,
 	}
 
-	err = q.DeleteTrackById(id)
+	err = q.DeleteTrackByID(id)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Responce{
