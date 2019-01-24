@@ -54,7 +54,7 @@ func main() {
 		fmt.Println("Error when loading configuration", err)
 	}
 
-	logutils.SetupLogging("migrations", cfg.Debug)
+	logutils.SetupLogging("migrations", cfg.Debug, os.Stdout)
 	logutils.Log.Info(fmt.Sprintf("Using config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{

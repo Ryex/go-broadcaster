@@ -59,6 +59,7 @@ func main() {
 	if err != nil {
 		fmt.Println("Error when loading configuration", err)
 	}
+
 	// setup logging
 	logutils.SetupLogging("dbprototyping", debug, os.Stdout)
 
