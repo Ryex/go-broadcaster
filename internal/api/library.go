@@ -11,7 +11,7 @@ import (
 )
 
 // GET /api/library/id/:id
-func (a *Api) GetLibraryPathByID(c echo.Context) error {
+func (a *Api) GetLibraryPathById(c echo.Context) error {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -25,7 +25,7 @@ func (a *Api) GetLibraryPathByID(c echo.Context) error {
 		DB: a.DB,
 	}
 
-	libp, err := q.GetLibraryPathByID(id)
+	libp, err := q.GetLibraryPathById(id)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, Responce{
 			Err: err,
@@ -105,7 +105,7 @@ func (a *Api) DeleteLibraryPath(c echo.Context) error {
 		DB: a.DB,
 	}
 
-	err = q.DeleteLibraryPathByID(id)
+	err = q.DeleteLibraryPathById(id)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Responce{

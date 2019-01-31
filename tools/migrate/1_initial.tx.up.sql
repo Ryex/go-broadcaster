@@ -4,8 +4,10 @@ CREATE TABLE "library_paths" (
   "added" timestamptz DEFAULT now(),
   "last_index" timestamptz,
   "indexing" boolean,
+
   PRIMARY KEY ("id")
 );
+
 CREATE TABLE "tracks" (
   "id" bigserial,
   "title" text,
@@ -19,18 +21,30 @@ CREATE TABLE "tracks" (
   "samplerate" bigint,
   "path" text,
   "added" timestamptz DEFAULT now(),
+
   PRIMARY KEY ("id")
 );
+
 CREATE TABLE "users" (
   "id" bigserial,
   "username" text UNIQUE,
   "password" text,
-  "roles" jsonb,
   "created_at" timestamptz DEFAULT now(),
+
   PRIMARY KEY ("id")
 );
+
 CREATE TABLE "roles" (
   "id" bigserial,
   "id_str" text UNIQUE,
-  PRIMARY KEY ("id")
+  "parent_id" bigint,
+  "perms" jsonb,
+
+  PRIMARY KEY ("id"),
+  FOREIGN KEY ("parent_id") REFERENCES "roles" ("id")
+);
+
+CREATE TABLE "user_to_roles" (
+  "user_id" bigint,
+  "role_id" bigint
 );

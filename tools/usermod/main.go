@@ -78,7 +78,7 @@ func main() {
 
 	// setup query logging
 	if outFileName == "" {
-		outFileName = "schema.sql"
+		outFileName = "usermod.sql"
 	}
 	outFilePath := filepath.Join(root, outFileName)
 	outFilePath, pathErr = filepath.Abs(outFilePath)

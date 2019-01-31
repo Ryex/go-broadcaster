@@ -105,7 +105,7 @@ func main() {
 
 	// setup query logging
 	if outFileName == "" {
-		outFileName = "schema.sql"
+		outFileName = "rolemod.sql"
 	}
 	outFilePath := filepath.Join(root, outFileName)
 	outFilePath, pathErr = filepath.Abs(outFilePath)
@@ -143,19 +143,19 @@ func main() {
 		}
 		name := args[0]
 		permsStr := args[1]
-		parentsStr := args[2]
+		parentStr := args[2]
 		fmt.Printf("Adding Role '%s'\n", name)
 		perms := strings.Split(permsStr, ",")
-		var parentNames []string
-		if parentsStr != "NONE" {
-			parentNames = strings.Split(parentsStr, ",")
+		var parent *models.Role
+		var dberr error
+		if parentStr != "NONE" {
+			parent, dberr = rq.GetRoleByName(parentStr)
+			if dberr != nil {
+				logutils.Log.Error("Error fetching parent role: %s", dberr)
+				return
+			}
 		}
-		parents, dberr := rq.GetRolesByName(parentNames)
-		if dberr != nil {
-			logutils.Log.Error("Error fetching parent roles: %s", dberr)
-			return
-		}
-		role, dberr := rq.CreateRole(name, perms, parents)
+		role, dberr := rq.CreateRole(name, perms, parent)
 		if dberr != nil {
 			logutils.Log.Error("Error creating role", dberr)
 			return
@@ -172,7 +172,7 @@ func main() {
 			logutils.Log.Error(fmt.Sprintf("Role '%s' does not exist", name), dberr)
 			return
 		}
-		dberr = rq.DeleteRoleByID(role.ID)
+		dberr = rq.DeleteRoleById(role.Id)
 		if dberr != nil {
 			logutils.Log.Error("Error deleting role", dberr)
 			return
@@ -210,7 +210,7 @@ func main() {
 		}
 		fmt.Printf("Roles: (Total: %d)\n", count)
 		for i, role := range roles {
-			fmt.Printf("  %d: %s\n", i, role.IDStr)
+			fmt.Printf("  %d: %s\n", i, role.IdStr)
 		}
 	case "describe":
 		if len(args) != 1 {
@@ -276,36 +276,30 @@ func modifyRole(cmd string, role *models.Role, rq *models.RoleQuery, args []stri
 			logutils.Log.Error("Error Updating Role: %s", dberr)
 			return dberr
 		}
-	case "addparent":
+	case "changeparent":
 		name := args[0]
-		prole, dberr := rq.GetRoleByName(name)
-		if dberr != nil {
-			logutils.Log.Error(fmt.Sprintf("Role '%s' does not exist", name), dberr)
-			return
+		var prole *models.Role
+		var dberr error
+		if name != "NONE" {
+			prole, dberr = rq.GetRoleByName(name)
+			if dberr != nil {
+				logutils.Log.Error(fmt.Sprintf("Role '%s' does not exist", name), dberr)
+				return
+			}
 		}
-		role.AddParent(*prole)
+		var pid int64
+		if prole != nil {
+			pid = prole.Id
+		}
+
+		role.ParentId = pid
+		role.Parent = prole
 		_, dberr = rq.Update(role)
 		if dberr != nil {
 			logutils.Log.Error("Error Updating Role: %s", dberr)
 			return dberr
 		}
-	case "removeparent":
-		name := args[0]
-		prole, dberr := rq.GetRoleByName(name)
-		if dberr != nil {
-			logutils.Log.Error(fmt.Sprintf("Role '%s' does not exist", name), dberr)
-			return
-		}
-		err = role.RemoveParent(*prole)
-		if err != nil {
-			err = fmt.Errorf("error removing parent '%s': %s ", name, err)
-			return err
-		}
-		_, dberr = rq.Update(role)
-		if dberr != nil {
-			logutils.Log.Error("Error Updating Role: %s", dberr)
-			return dberr
-		}
+
 	default:
 		err = fmt.Errorf("Unsupported command: %q", cmd)
 		if err != nil {
@@ -317,7 +311,7 @@ func modifyRole(cmd string, role *models.Role, rq *models.RoleQuery, args []stri
 }
 
 func describeRole(role *models.Role) {
-	fmt.Printf("Role %s:\n", role.IDStr)
+	fmt.Printf("Role %s:\n", role.IdStr)
 	fmt.Println("Permissions:")
 	for k, v := range role.Perms {
 		status := "granted"
@@ -326,10 +320,13 @@ func describeRole(role *models.Role) {
 		}
 		fmt.Printf("- %s -> %s\n", k, status)
 	}
-	fmt.Println("Parents:")
-	for _, parent := range role.Parents {
-		fmt.Printf("- %s\n", parent.IDStr)
+	fmt.Println("Parent:")
+	if role.Parent != nil {
+		fmt.Printf("- %d: %s\n", role.Parent.Id, role.Parent.IdStr)
+	} else {
+		fmt.Printf("- %s\n", "NONE")
 	}
+
 }
 
 func usage() {
