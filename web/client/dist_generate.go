@@ -5,14 +5,14 @@ package main
 import (
 	"log"
 
-	"github.com/ryex/go-broadcaster/web/filesystem"
+	"github.com/ryex/go-broadcaster/web/client"
 
 	"github.com/shurcooL/vfsgen"
 )
 
 func main() {
-	err := vfsgen.Generate(filesystem.Dist, vfsgen.Options{
-		PackageName:  "filesystem",
+	err := vfsgen.Generate(client.Dist, vfsgen.Options{
+		PackageName:  "client",
 		BuildTags:    "!dev",
 		VariableName: "Dist",
 	})

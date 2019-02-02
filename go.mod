@@ -11,6 +11,8 @@ require (
 	github.com/onsi/ginkgo v1.7.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/op/go-logging v0.0.0-20160211212156-b2cb9fa56473
+	github.com/shurcooL/httpfs v0.0.0-20181222201310-74dc9339e414 // indirect
+	github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/wtolson/go-taglib v0.0.0-20180718000046-586eb63c2628
 	golang.org/x/crypto v0.0.0-20190103213133-ff983b9c42bc
