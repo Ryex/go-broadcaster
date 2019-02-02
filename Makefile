@@ -9,7 +9,7 @@ NPMRUN	= yarn
 
 DEVELOPMENT ?= no
 
-PACKR = ~/go/bin/packr
+PACKR = $(GOPATH)/bin/packr
 
 default: build
 

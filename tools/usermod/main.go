@@ -11,6 +11,7 @@ import (
 
 	"github.com/ryex/go-broadcaster/internal/config"
 	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/models"
 )
 
 const usageText = `This program modifies users in the database.
@@ -115,6 +116,17 @@ func main() {
 	}
 
 	outFile.Sync()
+}
+
+func addUser(db *pg.DB, args []string) (err error) {
+	uq := models.UserQuery{
+		DB: db,
+	}
+
+	//TODO
+	//uq.CreateUser(name, pass, roleStrs)
+
+	return
 }
 
 func usage() {
