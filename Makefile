@@ -9,8 +9,6 @@ NPMRUN	= yarn
 
 DEVELOPMENT ?= no
 
-PACKR = ~/go/bin/packr
-
 default: build
 
 build: mediamonitor web
@@ -22,25 +20,21 @@ web: webserver
 
 webserver: _godeps webclient
 ifneq ($(DEVELOPMENT), yes)
-	$(PACKR)
+	$(GO) build -o ./bin/webserver -tags=dev ./web
+else
+	$(GO)	generate ./web/filesystem
+	$(GO) build -o ./bin/webserver ./web
 endif
-	$(GO) build -o ./bin/webserver ./web/
-ifneq ($(DEVELOPMENT), yes)
-	$(PACKR) clean
-endif
-	cp -r ./web/dist ./bin
 
 webclient: _npmdeps
 ifeq ($(DEVELOPMENT), yes)
-	 cd ./web && $(NPMRUN) devbuild
+	 cd ./web/client && $(NPMRUN) devbuild
 else
-	 cd ./web && $(NPMRUN) build
+	 cd ./web/client && $(NPMRUN) build
 endif
 
-
-
-_godeps:
-	$(GODEP) ensure
+_godeps: go.mod
+	$(GO) mod download
 
 _npmdeps:
 	$(NPM) install
