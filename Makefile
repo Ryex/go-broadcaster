@@ -33,7 +33,8 @@ ifneq ($(MODE), production)
 else
 	cd ./web/client && $(NPMRUN) build
 endif
-	cp -r ./web/client/dist ./bin
+	mkdir -p ./bin/dist
+	cp -r ./web/client/dist ./bin/dist
 
 _godeps: go.mod
 	$(GO) mod download
