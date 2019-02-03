@@ -18,7 +18,7 @@ import (
 	"github.com/ryex/go-broadcaster/internal/config"
 	"github.com/ryex/go-broadcaster/internal/logutils"
 	"github.com/ryex/go-broadcaster/internal/models"
-	distfs "github.com/ryex/go-broadcaster/web/filesystem"
+	distfs "github.com/ryex/go-broadcaster/web/client"
 )
 
 // "encoding/json"
