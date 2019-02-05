@@ -76,11 +76,6 @@ func main() {
 	}
 
 	// TODO get better DB Setup
-	logutils.Log.Info("Setting up database Schema")
-	schemaerr := models.CreateSchema(db, true)
-	if schemaerr != nil {
-		logutils.Log.Error("Error setting up database Schema", schemaerr)
-	}
 
 	a := api.Api{
 		DB:          db,
@@ -98,6 +93,7 @@ func main() {
 
 	CreateStaticRoutes(e, fs)
 
+	// write routes to file
 	data, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
 		return

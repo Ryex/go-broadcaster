@@ -6,11 +6,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-pg/pg"
 
 	"github.com/ryex/go-broadcaster/internal/config"
 	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/models"
 )
 
 const usageText = `This program modifies users in the database.
@@ -20,6 +22,16 @@ commands available are:
   - modify - modifies a user in the database
 Usage:
   go run *.go [-config path/to/config.json] [args] <command> [command args]
+Command Arguments:
+	- add <name> <roles>
+		- name - the new user's username
+		- roles - a comma seperated list of role names | NONE
+	- remove <name>
+		- name - name of the user to remove
+	- modify <name> <action> <action args>
+		- name - name of user to modify
+		- action - the action to take, one of (chpassword, addrole, removerole, chname)
+	- list ?
 Arguments:
 `
 
@@ -78,7 +90,7 @@ func main() {
 
 	// setup query logging
 	if outFileName == "" {
-		outFileName = "schema.sql"
+		outFileName = "usermod.sql"
 	}
 	outFilePath := filepath.Join(root, outFileName)
 	outFilePath, pathErr = filepath.Abs(outFilePath)
@@ -101,10 +113,20 @@ func main() {
 	if len(a) > 0 {
 		cmd = a[0]
 	}
+	args := a[1:]
+
+	var cmderr error
 
 	switch cmd {
 	case "add":
-		// TODO
+		if checkLen(args, 2, cmd) {
+			return
+		}
+		cmderr = addUser(db, args[0], args[1])
+		if cmderr != nil {
+			logutils.Log.Error("Error adding user: %s", cmderr)
+			return
+		}
 	case "remove":
 		// TODO
 	case "modify":
@@ -115,6 +137,41 @@ func main() {
 	}
 
 	outFile.Sync()
+}
+
+// addUser takes a name and either
+// a comma seperated list of role names or 'NONE'
+// then adds a user to the database
+func addUser(db *pg.DB, name string, rolesStr string) (err error) {
+	uq := models.UserQuery{
+		DB: db,
+	}
+
+	user, err := uq.GetUserByName(name)
+
+	rq := models.RoleQuery{
+		DB: db,
+	}
+
+	var roleNames []string
+	if rolesStr != "NONE" {
+		roleNames = strings.Split(rolesStr, ",")
+	}
+
+	roles, err := rq.GetRolesByName(roleNames)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func checkLen(args []string, l int, cmd string) bool {
+	if len(args) != l {
+		logutils.Log.Error("Command '%s' expects %d arguments got %d", cmd, l, len(args))
+		return true
+	}
+	return false
 }
 
 func usage() {

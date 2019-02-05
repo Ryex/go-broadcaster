@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"time"
 
@@ -13,245 +12,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Role is a struct for holding user rolle Permissions.
-type Role struct {
-	ID      int64
-	IDStr   string `sql:",unique"`
-	Parents []Role
-	Perms   map[string]bool
-}
-
-// Permissions is a simple type of strings mapped to bools.
-type Permissions map[string]bool
-
-// NewRole consturcts a new Role.
-// Usage: role := NewRole("rolename", ParentRole1, ParentRole2, ...)
-func NewRole(id string, Parents ...Role) *Role {
-	role := &Role{
-		IDStr: id,
-		Perms: make(Permissions),
-	}
-	for _, parent := range Parents {
-		// can't get a role parented to itself
-		if parent.IDStr == id {
-			continue
-		}
-		role.Parents = append(role.Parents, parent)
-	}
-	return role
-}
-
-// Name returns the Role's name.
-func (r *Role) Name() string {
-	return r.IDStr
-}
-
-// Assign grants a permission to the role.
-func (r *Role) Assign(p string) error {
-	if p != "" {
-		r.Perms[p] = true
-		return nil
-	}
-	return errors.New("empty permission")
-}
-
-// Remove removes a permission from a role.
-func (r *Role) Remove(p string) error {
-	if p != "" {
-		_, ok := r.Perms[p]
-		if ok {
-			delete(r.Perms, p)
-		} else {
-			return errors.New("permission not assigned")
-		}
-		return nil
-	}
-	return errors.New("empty permission")
-}
-
-// Revoke revokes permission from a role.
-func (r *Role) Revoke(p string) error {
-	if p != "" {
-		r.Perms[p] = false
-		return nil
-	}
-	return errors.New("empty permission")
-}
-
-// Permit checks if this role or it's parents has a permission
-// if a permission is granted in a parents but revoked in the child
-// returns false
-func (r *Role) Permit(p string) bool {
-	//check is this role has the permission
-	if v, ok := r.Perms[p]; ok {
-		return v
-	}
-	//check if any of the parent roles has the permission
-	for _, parent := range r.Parents {
-		// sanity check to prevent recusion should the wworst happen
-		if parent.IDStr == r.IDStr {
-			continue
-		}
-		if parent.Permit(p) {
-			return true
-		}
-	}
-	return false
-}
-
-// Deny checks if THIS role (parents ignored) has the permission revoked
-func (r *Role) Deny(p string) bool {
-	if v, ok := r.Perms[p]; ok {
-		return !v
-	}
-	return false
-}
-
-// Update updates all the information for a role
-func (r *Role) Update(name string, perms []string, parents []Role) {
-	r.IDStr = name
-	r.Perms = make(Permissions)
-	r.Parents = parents
-	for _, perm := range perms {
-		r.Assign(perm)
-	}
-}
-
-// AddParent adds the passed role as a parent of this role
-func (r *Role) AddParent(p Role) {
-	r.Parents = append(r.Parents, p)
-}
-
-// RemoveParent removcs a parent role form this role
-func (r *Role) RemoveParent(p Role) (err error) {
-	//find index r
-	deli := -1
-	for i, parent := range r.Parents {
-		if parent.IDStr == p.IDStr {
-			deli = i
-			break
-		}
-	}
-	if deli < 0 {
-		err = fmt.Errorf("Role does not have parent %s", p.IDStr)
-		return
-	}
-	// append the slice up to the removal index
-	// with all elements pased removal index
-	r.Parents = append(r.Parents[:deli], r.Parents[deli+1:]...)
-	return nil
-}
-
-// RoleQuery handles Role model queries on the database
-type RoleQuery struct {
-	DB *pg.DB
-}
-
-// GetRoleByName returns a role form the database by name
-func (rq *RoleQuery) GetRoleByName(name string) (r *Role, err error) {
-	r = new(Role)
-	err = rq.DB.Model(r).Where("role.id_str = ?", name).Select()
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
-// GetRoleByID returns a Role from the database by ID
-func (rq *RoleQuery) GetRoleByID(id int64) (r *Role, err error) {
-	r = new(Role)
-	err = rq.DB.Model(r).Where("role.id = ?", id).Select()
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
-// GetRoles returns users from the Database
-// support pagination
-func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count int, err error) {
-	//var pagervalues urlvalues.Values
-	//err = urlvalues.Decode(queryValues, pagervalues)
-	q := rq.DB.Model(&roles)
-	count, err = q.Apply(urlvalues.Pagination(queryValues)).SelectAndCount()
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
-// GetRolesByName returns a number of roles from the database by their names,
-func (rq *RoleQuery) GetRolesByName(names []string) (roles []Role, err error) {
-	roles = make([]Role, len(names))
-	if len(roles) > 0 {
-		err = rq.DB.Model(roles).Where("role.id_str in (?)", pg.In(names)).Select()
-		if err != nil {
-			logutils.Log.Error("db query error: %s", err)
-		}
-	}
-	return
-}
-
-// CreateRole adds a role to the database.
-func (rq *RoleQuery) CreateRole(name string, perms []string, parents []Role) (r *Role, err error) {
-	r = NewRole(name, parents...)
-	for _, perm := range perms {
-		r.Assign(perm)
-	}
-	err = rq.DB.Insert(r)
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
-// Update uses the model to update the corasponding roel in the databases
-func (rq *RoleQuery) Update(role *Role) (r *Role, err error) {
-	r = role
-	err = rq.DB.Update(r)
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
-// UpdateRoleByID updates a role's information in the database by it's ID
-func (rq *RoleQuery) UpdateRoleByID(id int64, name string, perms []string, parents []Role) (r *Role, err error) {
-	r, err = rq.GetRoleByID(id)
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-
-	if name == "" {
-		name = r.IDStr
-	}
-
-	r.Update(name, perms, parents)
-
-	err = rq.DB.Update(r)
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
-// DeleteRoleByID removes a role from the database by it's ID.
-func (rq *RoleQuery) DeleteRoleByID(id int64) (err error) {
-	r := new(Role)
-	_, err = rq.DB.Model(r).Where("role.id = ?", id).Delete()
-	if err != nil {
-		logutils.Log.Error("db query error", err)
-	}
-	return
-}
-
 // User is the model that holds user information
 type User struct {
-	ID        int64
+	Id        int64
 	Username  string `sql:",unique"`
 	Password  string
-	Roles     []Role
+	Roles     []Role    `pg:"many2many:user_to_roles"`
 	CreatedAt time.Time `sql:"default:now()"`
+}
+
+type UserToRole struct {
+	UserId int64
+	RoleId int64
 }
 
 // HasPermit returns if ANY role of the user has the given permission
@@ -297,7 +69,7 @@ func (u *User) MatchHashPass(pass string) bool {
 // AddRole adds a role to the user
 func (u *User) AddRole(r Role) {
 	for _, role := range u.Roles {
-		if r.IDStr == role.IDStr {
+		if r.IdStr == role.IdStr {
 			return
 		}
 	}
@@ -309,7 +81,7 @@ func (u *User) RemoveRole(r Role) {
 
 	delPos := -1
 	for i, role := range u.Roles {
-		if r.IDStr == role.IDStr {
+		if r.IdStr == role.IdStr {
 			delPos = i
 			break
 		}
@@ -365,17 +137,17 @@ func (uq *UserQuery) GetUsers(queryValues url.Values) (users []User, count int, 
 	err = urlvalues.Decode(queryValues, pagervalues)
 	q := uq.DB.Model(&users)
 	count, err = q.Apply(urlvalues.Pagination(pagervalues)).Column(
-		"id", "username", "roles", "created_at").SelectAndCount()
+		"id", "username", "roles", "created_at").Relation("Roles").SelectAndCount()
 	if err != nil {
 		logutils.Log.Error("db query error", err)
 	}
 	return
 }
 
-// GetUserByID returns a user from the database by ID
-func (uq *UserQuery) GetUserByID(id int64) (u *User, err error) {
+// GetUserById returns a user from the database by Id
+func (uq *UserQuery) GetUserById(id int64) (u *User, err error) {
 	u = new(User)
-	err = uq.DB.Model(u).Where("user.id = ?", id).Select()
+	err = uq.DB.Model(u).Where("user.id = ?", id).Relation("Roles").Select()
 	if err != nil {
 		logutils.Log.Error("db query error", err)
 	}
@@ -385,15 +157,15 @@ func (uq *UserQuery) GetUserByID(id int64) (u *User, err error) {
 // GetUserByName returns a user from the database by name
 func (uq *UserQuery) GetUserByName(name string) (u *User, err error) {
 	u = new(User)
-	err = uq.DB.Model(u).Where("user.username = ?", name).Select()
+	err = uq.DB.Model(u).Where("user.username = ?", name).Relation("Roles").Select()
 	if err != nil {
 		logutils.Log.Error("db query error", err)
 	}
 	return
 }
 
-// DeleteUserByID removes a user from the database by ID
-func (uq *UserQuery) DeleteUserByID(id int64) (err error) {
+// DeleteUserById removes a user from the database by Id
+func (uq *UserQuery) DeleteUserById(id int64) (err error) {
 	u := new(User)
 	_, err = uq.DB.Model(u).Where("user.id = ?", id).Delete()
 	if err != nil {
@@ -448,9 +220,9 @@ func (uq *UserQuery) Update(user *User) (u *User, err error) {
 	return
 }
 
-// UpdateUserByID updates a user's information by ID
-func (uq *UserQuery) UpdateUserByID(id int64, name string, pass string, roleStrs []string) (u *User, err error) {
-	u, err = uq.GetUserByID(id)
+// UpdateUserById updates a user's information by Id
+func (uq *UserQuery) UpdateUserById(id int64, name string, pass string, roleStrs []string) (u *User, err error) {
+	u, err = uq.GetUserById(id)
 	if err != nil {
 		return
 	}
@@ -513,10 +285,10 @@ func (uq *UserQuery) UpdateUserByName(name string, pass string, roleStrs []strin
 	return
 }
 
-// UserByIDAddRoleByName adds a role in the databases found by name
-// to a user in the database found by ID
-func (uq *UserQuery) UserByIDAddRoleByName(id int64, rName string) (u *User, err error) {
-	u, err = uq.GetUserByID(id)
+// UserByIdAddRoleByName adds a role in the databases found by name
+// to a user in the database found by Id
+func (uq *UserQuery) UserByIdAddRoleByName(id int64, rName string) (u *User, err error) {
+	u, err = uq.GetUserById(id)
 	if err != nil {
 		return
 	}
@@ -557,10 +329,10 @@ func (uq *UserQuery) UserByNameAddRoleByName(name string, rName string) (u *User
 	return
 }
 
-// UserByIDRemoveRoleByName removes a role in the databases found by name
-// to a user in the database found by ID
-func (uq *UserQuery) UserByIDRemoveRoleByName(id int64, rName string) (u *User, err error) {
-	u, err = uq.GetUserByID(id)
+// UserByIdRemoveRoleByName removes a role in the databases found by name
+// to a user in the database found by Id
+func (uq *UserQuery) UserByIdRemoveRoleByName(id int64, rName string) (u *User, err error) {
+	u, err = uq.GetUserById(id)
 	if err != nil {
 		return
 	}
@@ -601,17 +373,17 @@ func (uq *UserQuery) UserByNameRemoveRoleByName(name string, rName string) (u *U
 	return
 }
 
-// UserByIDAddRoleByID adds a role in the databases found by ID
-// to a user in the database found by ID
-func (uq *UserQuery) UserByIDAddRoleByID(id int64, rid int64) (u *User, err error) {
-	u, err = uq.GetUserByID(id)
+// UserByIdAddRoleById adds a role in the databases found by Id
+// to a user in the database found by Id
+func (uq *UserQuery) UserByIdAddRoleById(id int64, rid int64) (u *User, err error) {
+	u, err = uq.GetUserById(id)
 	if err != nil {
 		return
 	}
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleByID(rid)
+	r, err := rq.GetRoleById(rid)
 	if err != nil {
 		return
 	}
@@ -623,9 +395,9 @@ func (uq *UserQuery) UserByIDAddRoleByID(id int64, rid int64) (u *User, err erro
 	return
 }
 
-// UserByNameAddRoleByID adds a role in the databases found by ID
+// UserByNameAddRoleById adds a role in the databases found by Id
 // to a user in the database found by name
-func (uq *UserQuery) UserByNameAddRoleByID(name string, rid int64) (u *User, err error) {
+func (uq *UserQuery) UserByNameAddRoleById(name string, rid int64) (u *User, err error) {
 	u, err = uq.GetUserByName(name)
 	if err != nil {
 		return
@@ -633,7 +405,7 @@ func (uq *UserQuery) UserByNameAddRoleByID(name string, rid int64) (u *User, err
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleByID(rid)
+	r, err := rq.GetRoleById(rid)
 	if err != nil {
 		return
 	}
@@ -645,17 +417,17 @@ func (uq *UserQuery) UserByNameAddRoleByID(name string, rid int64) (u *User, err
 	return
 }
 
-// UserByIDRemoveRoleByID removes a role in the databases found by ID
-// to a user in the database found by ID
-func (uq *UserQuery) UserByIDRemoveRoleByID(id int64, rid int64) (u *User, err error) {
-	u, err = uq.GetUserByID(id)
+// UserByIdRemoveRoleById removes a role in the databases found by Id
+// to a user in the database found by Id
+func (uq *UserQuery) UserByIdRemoveRoleById(id int64, rid int64) (u *User, err error) {
+	u, err = uq.GetUserById(id)
 	if err != nil {
 		return
 	}
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleByID(rid)
+	r, err := rq.GetRoleById(rid)
 	if err != nil {
 		return
 	}
@@ -667,9 +439,9 @@ func (uq *UserQuery) UserByIDRemoveRoleByID(id int64, rid int64) (u *User, err e
 	return
 }
 
-// UserByNameRemoveRoleByID removes a role in the databases found by ID
+// UserByNameRemoveRoleById removes a role in the databases found by Id
 // to a user in the database found by name
-func (uq *UserQuery) UserByNameRemoveRoleByID(name string, rid int64) (u *User, err error) {
+func (uq *UserQuery) UserByNameRemoveRoleById(name string, rid int64) (u *User, err error) {
 	u, err = uq.GetUserByName(name)
 	if err != nil {
 		return
@@ -677,7 +449,7 @@ func (uq *UserQuery) UserByNameRemoveRoleByID(name string, rid int64) (u *User, 
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleByID(rid)
+	r, err := rq.GetRoleById(rid)
 	if err != nil {
 		return
 	}

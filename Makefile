@@ -42,5 +42,25 @@ _godeps: go.mod
 _npmdeps:
 	$(NPM) install
 
+tools: dbproto migrate rolemod usermod
+
+dbproto: ./tools/dbproto/*
+	mkdir -p ./bin/tools
+	$(GO) build -o ./bin/tools/dbproto$(GOEXE) ./tools/dbproto
+
+migrate: ./tools/migrate/*
+	mkdir -p ./bin/tools/migrate
+	$(GO) build -o ./bin/tools/migrate/migrate$(GOEXE) ./tools/migrate
+	cp ./tools/migrate/*.sql ./bin/tools/migrate
+
+rolemod: ./tools/rolemod/*
+	mkdir -p ./bin/tools
+	$(GO) build -o ./bin/tools/rolemod$(GOEXE) ./tools/rolemod
+
+usermod: ./tools/usermod/*
+	mkdir -p ./bin/tools
+	$(GO) build -o ./bin/tools/usermod$(GOEXE) ./tools/usermod
+
+
 clean:
 	rm -rf ./bin

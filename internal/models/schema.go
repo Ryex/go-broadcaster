@@ -14,6 +14,11 @@ var Models = []interface{}{
 	(*Track)(nil),
 	(*User)(nil),
 	(*Role)(nil),
+	(*UserToRole)(nil),
+}
+
+func init() {
+	orm.RegisterTable((*UserToRole)(nil))
 }
 
 // CreateSchema creates the database schema useing the go-pg  modles listed
