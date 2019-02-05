@@ -40,6 +40,8 @@ Command Arguments:
         - perm - the name of the permission to remove
       - revoke <perm> - the role will deny that permission
         - perm - the permission to deny
+			- changeparent <name>
+				- name - name of new parent
   - list
   - describe <name>
     - name - role to describe
@@ -101,7 +103,7 @@ func main() {
 
 	// setup query logging
 	if outFileName == "" {
-		outFileName = "schema.sql"
+		outFileName = "rolemod.sql"
 	}
 	outFilePath := filepath.Join(root, outFileName)
 	outFilePath, pathErr = filepath.Abs(outFilePath)
@@ -145,7 +147,7 @@ func main() {
 		if parentStr != "NONE" {
 			parent, dberr = rq.GetRoleByName(parentStr)
 			if dberr != nil {
-				logutils.Log.Error("Error fetching parent roles: %s", dberr)
+				logutils.Log.Error("Error fetching parent role: %s", dberr)
 				return
 			}
 		}
@@ -271,6 +273,30 @@ func modifyRole(cmd string, role *models.Role, rq *models.RoleQuery, args []stri
 			logutils.Log.Error("Error Updating Role: %s", dberr)
 			return dberr
 		}
+	case "changeparent":
+		name := args[0]
+		var prole *models.Role
+		var dberr error
+		if name != "NONE" {
+			prole, dberr = rq.GetRoleByName(name)
+			if dberr != nil {
+				logutils.Log.Error(fmt.Sprintf("Role '%s' does not exist", name), dberr)
+				return
+			}
+		}
+		var pid int64
+		if prole != nil {
+			pid = prole.Id
+		}
+
+		role.ParentId = pid
+		role.Parent = prole
+		_, dberr = rq.Update(role)
+		if dberr != nil {
+			logutils.Log.Error("Error Updating Role: %s", dberr)
+			return dberr
+		}
+
 	default:
 		err = fmt.Errorf("Unsupported command: %q", cmd)
 		if err != nil {
@@ -291,12 +317,13 @@ func describeRole(role *models.Role) {
 		}
 		fmt.Printf("- %s -> %s\n", k, status)
 	}
-	fmt.Println("Parents:")
+	fmt.Println("Parent:")
 	if role.Parent != nil {
-		fmt.Printf("- %s\n", role.Parent.IdStr)
+		fmt.Printf("- %d: %s\n", role.Parent.Id, role.Parent.IdStr)
 	} else {
-		fmt.Printf("- None\n")
+		fmt.Printf("- %s\n", "NONE")
 	}
+
 }
 
 func checkLen(args []string, l int, cmd string) bool {

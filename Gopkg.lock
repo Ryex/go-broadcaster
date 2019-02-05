@@ -10,15 +10,15 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:4fc7ed80c2e257885c08d7ac2b1e5478084d1dfb7f0bd568d2fd4b8746d03c93"
+  digest = "1:0088f4e51b62201773e9b68b4cfc7b2deb8351d17bf4c16d464ab1e7db2fff92"
   name = "github.com/go-pg/migrations"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2c19ab5778da611268a99b809218d1c9a8eb3df3"
-  version = "v6.6.3"
+  revision = "86c0191e84b66eb9baf84616415617dc83875ae5"
+  version = "v6.6.4"
 
 [[projects]]
-  digest = "1:c7f363319b2de48b6ea57351c12145fa84787a3035891da6e317decdb12cb599"
+  digest = "1:f2b47413b7f68c876838c3b8ad632af48aa16dccf2375e9d58fd63d1ee2ecd28"
   name = "github.com/go-pg/pg"
   packages = [
     ".",
@@ -33,16 +33,16 @@
     "urlvalues",
   ]
   pruneopts = "UT"
-  revision = "f3f33341f61a13a2a09654d0c175bbdc03f2ca12"
-  version = "v7.1.0"
+  revision = "750698e034bbc0f35e33e69df35cd8cc4c6b7d3d"
+  version = "v7.1.7"
 
 [[projects]]
-  digest = "1:bd342004ef1bb83bee8709e2ad630e47a95d069f7fcb60ee1b8bceb4bbbe14ae"
+  digest = "1:4868df29afe0468bd98f663aff34f486b2e92db41f25747d8e6855c9cd91808b"
   name = "github.com/gobuffalo/envy"
   packages = ["."]
   pruneopts = "UT"
-  revision = "801d7253ade1f895f74596b9a96147ed2d3b087e"
-  version = "v1.6.11"
+  revision = "f3b98d4da2fa434517f47f615e217fa72ff2c51e"
+  version = "v1.6.12"
 
 [[projects]]
   branch = "master"
@@ -85,15 +85,15 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:73c5062c19c602b4d279b581b0ee3ffe43f61bfc37e91885b89190154bb5e909"
+  digest = "1:efd601ad1d1189884f37ed075fadb5bbd17f1f5acf5862827247c6da56d125ba"
   name = "github.com/labstack/echo"
   packages = [
     ".",
     "middleware",
   ]
   pruneopts = "UT"
-  revision = "c7eb8da9ec73e78c4f38413f3f835e0cd52c7d72"
-  version = "v3.3.8"
+  revision = "38772c686c76b501f94bd6cd5b77f5842e93b559"
+  version = "v3.3.10"
 
 [[projects]]
   digest = "1:764bce605f1c70823a567ac3205a03e6b7f375ca747d8820fded0b0abddda802"
@@ -149,7 +149,7 @@
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:efafa5160b1666d27e6e1ad4cd3fba27ce73aaaa1e99c3d02e14e55690a8878d"
+  digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
   name = "github.com/rogpeppe/go-internal"
   packages = [
     "modfile",
@@ -157,8 +157,8 @@
     "semver",
   ]
   pruneopts = "UT"
-  revision = "d87f08a7d80821c797ffc8eb8f4e01675f378736"
-  version = "v1.0.0"
+  revision = "68d1cb014f030acd0f10ac553801e43c0e5da629"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:c468422f334a6b46a19448ad59aaffdfc0a36b08fdcc1c749a0b29b6453d7e59"
@@ -186,7 +186,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:16b8eb8e2f3e2d7ae56d79951642df98d355ddc4877f328023eafb6a6b5c5274"
+  digest = "1:fe41253d3ed8821e1a1a703172ad3c2ecc2109d9b4f07fc634d23ab154fa2d59"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
@@ -196,15 +196,15 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "505ab145d0a99da450461ae2c1a9f6cd10d1f447"
+  revision = "b01c7a72566457eb1420261cdafef86638fc3861"
 
 [[projects]]
   branch = "master"
-  digest = "1:5b7594f7c43cb5fc8f31c3f4a9f6a61ee798dbd5fcb36b70cb3d4780aad4c509"
+  digest = "1:aba2486bbebaadd1f62bde3c363ddbd984efade895833d86ed069f586fd9e899"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "9a3f9b0469bbc6b8802087ae5c0af9f61502de01"
+  revision = "aca44879d5644da7c5b8ec6a1115e9b6ea6c40d9"
 
 [[projects]]
   digest = "1:999d566ad1ae4303c456af5a155f7b42401cca4fd33552567ed9dd997b107a08"

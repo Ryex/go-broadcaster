@@ -47,10 +47,9 @@ func NewRole(id string, parent *Role) *Role {
 	role := &Role{
 		IdStr:    id,
 		Perms:    make(Permissions),
-		Parent:   parent,
 		ParentId: pid,
+		Parent:   parent,
 	}
-
 	return role
 }
 
@@ -111,6 +110,11 @@ func (r *Role) Permit(p string) bool {
 // Deny checks if THIS role (parents ignored) has the permission revoked
 func (r *Role) Deny(p string) bool {
 	return r.Perms.Deny(p)
+}
+
+func (r *Role) SetParent(prole *Role) {
+	r.ParentId = prole.Id
+	r.Parent = prole
 }
 
 // Update updates all the information for a role

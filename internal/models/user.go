@@ -21,9 +21,10 @@ type User struct {
 	CreatedAt time.Time `sql:"default:now()"`
 }
 
+// ManyToMany join table for users and roles
 type UserToRole struct {
-	UserId int64
-	RoleId int64
+	UserId int
+	RoleId int
 }
 
 // HasPermit returns if ANY role of the user has the given permission

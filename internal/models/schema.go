@@ -8,6 +8,12 @@ import (
 	"github.com/go-pg/pg/orm"
 )
 
+func init() {
+	// Register many to many model so ORM can better recognize m2m relation.
+	// This should be done before dependant models are used.
+	orm.RegisterTable((*UserToRole)(nil))
+}
+
 // Models is a slice listing all modles present for use in Schema operations
 var Models = []interface{}{
 	(*LibraryPath)(nil),
@@ -15,10 +21,6 @@ var Models = []interface{}{
 	(*User)(nil),
 	(*Role)(nil),
 	(*UserToRole)(nil),
-}
-
-func init() {
-	orm.RegisterTable((*UserToRole)(nil))
 }
 
 // CreateSchema creates the database schema useing the go-pg  modles listed

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -33,6 +34,9 @@ func main() {
 	cfgPath := filepath.Join(root, "config.json")
 
 	cfgPtr := flag.String("config", cfgPath, "Path to the config.json file")
+	dbnamePtr := flag.String("dbname", "", "Optional alternate database name to connect to")
+	outFileNamePtr := flag.String("output", "migrate.sql", "output file to record queries to")
+	debugPtr := flag.Bool("debug", false, "output debug info level log messages?")
 
 	flag.Parse()
 
@@ -42,6 +46,9 @@ func main() {
 	}
 
 	cfgPath = *cfgPtr
+	dbname := *dbnamePtr
+	outFileName := *outFileNamePtr
+	debug := *debugPtr
 
 	cfgPath, pathErr := filepath.Abs(cfgPath)
 	if pathErr != nil {
@@ -54,7 +61,12 @@ func main() {
 		fmt.Println("Error when loading configuration", err)
 	}
 
-	logutils.SetupLogging("migrations", cfg.Debug, os.Stdout)
+	logutils.SetupLogging("migrations", debug, os.Stdout)
+
+	if dbname != "" {
+		cfg.DBDatabase = dbname
+	}
+
 	logutils.Log.Info(fmt.Sprintf("Using config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{
@@ -64,6 +76,25 @@ func main() {
 		Password: cfg.DBPassword,
 	})
 	defer db.Close()
+
+	// setup query logging
+	if outFileName == "" {
+		outFileName = "migrate.sql"
+	}
+	outFilePath := filepath.Join(root, outFileName)
+	outFilePath, pathErr = filepath.Abs(outFilePath)
+	if pathErr != nil {
+		fmt.Println("could not get absolute path for output file", pathErr)
+	}
+
+	outFile, err := os.Create(outFilePath)
+	if err != nil {
+		panic(err)
+	}
+	defer outFile.Close()
+
+	setupDatabaseQueryLogging(db, outFile)
+	logutils.Log.Info("Writing output to %s", outFilePath)
 
 	oldVersion, newVersion, err := migrations.Run(db, flag.Args()...)
 	if err != nil {
@@ -89,4 +120,28 @@ func errorf(s string, args ...interface{}) {
 func exitf(s string, args ...interface{}) {
 	errorf(s, args...)
 	os.Exit(1)
+}
+
+type dbLogger struct {
+	out io.Writer
+}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {}
+
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+	query, err := q.FormattedQuery()
+	if err != nil {
+		panic(err)
+	}
+	out := d.out
+	if out == nil {
+		out = os.Stdout
+	}
+	fmt.Fprintf(out, "%s;\n", query)
+}
+
+func setupDatabaseQueryLogging(db *pg.DB, out io.Writer) {
+	logger := new(dbLogger)
+	logger.out = out
+	db.AddQueryHook(logger)
 }
