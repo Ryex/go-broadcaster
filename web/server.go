@@ -1,5 +1,3 @@
-//go:generate npm run build
-//go:generate go-bindata-assetfs dist/...
 package main
 
 import (
@@ -7,12 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/go-pg/pg"
-	"github.com/gobuffalo/packr"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
@@ -20,6 +18,7 @@ import (
 	"github.com/ryex/go-broadcaster/internal/config"
 	"github.com/ryex/go-broadcaster/internal/logutils"
 	"github.com/ryex/go-broadcaster/internal/models"
+	distfs "github.com/ryex/go-broadcaster/web/client"
 )
 
 // "encoding/json"
@@ -61,7 +60,7 @@ func main() {
 		fmt.Println("Error when loading configuration", err)
 	}
 
-	logutils.SetupLogging("broadcaster-web", cfg.Debug)
+	logutils.SetupLogging("broadcaster-web", cfg.Debug, os.Stdout)
 	logutils.Log.Info(fmt.Sprintf("Using config: %+v", cfg))
 
 	db := pg.Connect(&pg.Options{
@@ -78,7 +77,7 @@ func main() {
 
 	// TODO get better DB Setup
 	logutils.Log.Info("Setting up database Schema")
-	schemaerr := models.CreateSchema(db)
+	schemaerr := models.CreateSchema(db, true)
 	if schemaerr != nil {
 		logutils.Log.Error("Error setting up database Schema", schemaerr)
 	}
@@ -95,9 +94,9 @@ func main() {
 
 	api.RegisterRoutes(e, &a, &cfg)
 
-	box := packr.NewBox("./dist")
+	var fs http.FileSystem = distfs.Dist
 
-	CreateStaticRoutes(e, box)
+	CreateStaticRoutes(e, fs)
 
 	data, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

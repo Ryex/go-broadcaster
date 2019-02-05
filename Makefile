@@ -3,44 +3,44 @@
 
 GO			=	go
 GODEP		=	dep
+GOEXE 	:= $(shell go env GOEXE)
 
 NPM			= yarn
 NPMRUN	= yarn
 
-DEVELOPMENT ?= no
-
-PACKR = $(GOPATH)/bin/packr
+MODE ?= production
 
 default: build
 
 build: mediamonitor web
 
 mediamonitor: _godeps
-	$(GO) build -o ./bin/media-monitor ./cmd/media-monitor
+	$(GO) build -o ./bin/media-monitor$(GOEXE) ./cmd/media-monitor
 
 web: webserver
 
 webserver: _godeps webclient
-ifneq ($(DEVELOPMENT), yes)
-	$(PACKR)
+ifneq ($(MODE), production)
+	$(GO) build -o ./bin/webserver$(GOEXE) -tags=dev ./web
+else
+	$(GO)	generate ./web/client
+	$(GO) build -o ./bin/webserver$(GOEXE) ./web
 endif
-	$(GO) build -o ./bin/webserver ./web/
-ifneq ($(DEVELOPMENT), yes)
-	$(PACKR) clean
-endif
-	cp -r ./web/dist ./bin
 
 webclient: _npmdeps
-ifeq ($(DEVELOPMENT), yes)
-	 cd ./web && $(NPMRUN) devbuild
+ifneq ($(MODE), production)
+	cd ./web/client && $(NPMRUN) dev-build
 else
-	 cd ./web && $(NPMRUN) build
+	cd ./web/client && $(NPMRUN) build
 endif
+	mkdir -p ./bin/dist
+	cp -r ./web/client/dist ./bin/dist
 
-
-
-_godeps:
-	$(GODEP) ensure
+_godeps: go.mod
+	$(GO) mod download
 
 _npmdeps:
 	$(NPM) install
+
+clean:
+	rm -rf ./bin
