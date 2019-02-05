@@ -6,9 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/go-pg/pg"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/ryex/go-broadcaster/internal/config"
 	"github.com/ryex/go-broadcaster/internal/logutils"
@@ -30,8 +33,20 @@ Command Arguments:
 		- name - name of the user to remove
 	- modify <name> <action> <action args>
 		- name - name of user to modify
-		- action - the action to take, one of (chpassword, addrole, removerole, chname)
-	- list ?
+		- action - the action to take, one of (chpasswd, addrole, removerole, chname)
+			- chpasswd
+				- No Arguments
+			- addrole <rolename>
+				- rolename - name of role to add
+			- removerole <rolename>
+				- rolename - name of role to remove
+			- chname <name>
+				- name - the new user name
+	- list <method> <order> [limit] [offset]
+		- method - string, one of ID | NAME
+		- order - string, one of ASC | DESC
+		- limit - optional, limit for the number of object returned
+		- offset - offset to start listing at
 Arguments:
 `
 
@@ -128,9 +143,54 @@ func main() {
 			return
 		}
 	case "remove":
-		// TODO
+		if checkLen(args, 1, cmd) {
+			return
+		}
+		cmderr = removeUser(db, args[0])
+		if cmderr != nil {
+			logutils.Log.Error("Error removing user: %s", cmderr)
+			return
+		}
 	case "modify":
-		// TODO
+		if !(len(args) == 2 || len(args) == 3) {
+			logutils.Log.Error("Command '%s' expects 2 or 3 arguments, got %d", cmd, len(args))
+			return
+		}
+		cmderr = modifyUser(db, args[0], args[1:])
+		if cmderr != nil {
+			logutils.Log.Error("Error modifing user: %s", cmderr)
+			return
+		}
+	case "list":
+		if !(len(args) == 2 || len(args) == 4) {
+			logutils.Log.Error("Command '%s' expects 2 to 4 arguments, got %d", cmd, len(args))
+			return
+		}
+		var limit int
+		if len(args) >= 3 {
+			var lierr error
+			limit, lierr = strconv.Atoi(args[2])
+			if lierr != nil {
+				logutils.Log.Error("Error parseing limit: %s", lierr)
+			}
+		} else {
+			limit = 100
+		}
+		var offset int
+		if len(args) == 4 {
+			var offerr error
+			offset, offerr = strconv.Atoi(args[3])
+			if offerr != nil {
+				logutils.Log.Error("Error parseing offset: %s", offerr)
+			}
+		} else {
+			offset = 0
+		}
+		cmderr = listUsers(db, args[0], args[1], limit, offset)
+		if cmderr != nil {
+			logutils.Log.Error("Error listing users: %s", cmderr)
+			return
+		}
 	default:
 		logutils.Log.Error("Unsupported command: %q", cmd)
 		return
@@ -147,22 +207,157 @@ func addUser(db *pg.DB, name string, rolesStr string) (err error) {
 		DB: db,
 	}
 
-	user, err := uq.GetUserByName(name)
-
-	rq := models.RoleQuery{
-		DB: db,
+	u, err := uq.GetUserByName(name)
+	fmt.Printf("Info: User: '%v' Error: '%s'\n", u, err)
+	if u != nil {
+		err = fmt.Errorf("User '%s' already exists", name)
+		return
 	}
+
+	// clear the error from no user?
+	err = nil
 
 	var roleNames []string
 	if rolesStr != "NONE" {
 		roleNames = strings.Split(rolesStr, ",")
 	}
 
-	roles, err := rq.GetRolesByName(roleNames)
+	pass, err := getPassword()
 	if err != nil {
 		return
 	}
 
+	user, err := uq.CreateUser(name, pass, roleNames)
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("Created user %+v\n", user)
+
+	return
+}
+
+// removeUser takes a name and removes the user from the database
+func removeUser(db *pg.DB, name string) (err error) {
+	uq := models.UserQuery{
+		DB: db,
+	}
+
+	u, err := uq.GetUserByName(name)
+	if u == nil {
+		err = fmt.Errorf("User '%s' does not exist", name)
+		return
+	}
+	// clear the error from no user?
+	err = nil
+
+	err = uq.DeleteUserById(u.Id)
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("Deleated user %+v\n", u)
+
+	return
+
+}
+
+func modifyUser(db *pg.DB, name string, a []string) (err error) {
+	uq := models.UserQuery{
+		DB: db,
+	}
+
+	u, err := uq.GetUserByName(name)
+	if u == nil {
+		err = fmt.Errorf("User '%s' does not exist", name)
+		return
+	}
+	// clear the error from no user?
+	err = nil
+
+	cmd := ""
+	if len(a) > 0 {
+		cmd = a[0]
+	}
+	args := a[1:]
+
+	switch cmd {
+	case "chpasswd":
+		if checkLen(args, 0, cmd) {
+			return
+		}
+		// TODO
+	case "addrole":
+		if checkLen(args, 1, cmd) {
+			return
+		}
+		// TODO
+	case "removerole":
+		if checkLen(args, 1, cmd) {
+			return
+		}
+		// TODO
+	case "chname":
+		if checkLen(args, 1, cmd) {
+			return
+		}
+		// TODO
+	default:
+		logutils.Log.Error("Unsupported command: %q", cmd)
+		return
+	}
+
+	return
+
+}
+
+func listUsers(db *pg.DB, method string, order string, limit int, offset int) (err error) {
+	uq := models.UserQuery{
+		DB: db,
+	}
+
+	var users []models.User
+	var count int
+	switch strings.ToUpper(method) {
+	case "ID":
+		users, count, err = uq.GetUsersLimitById(order, limit, offset)
+	case "NAME":
+		users, count, err = uq.GetUsersLimitByName(order, limit, offset)
+	default:
+		err = fmt.Errorf("method must be one of ID | NAME")
+		return
+	}
+
+	fmt.Printf("Count: %d \n", count)
+	for _, user := range users {
+		fmt.Printf("%d: %s \n", user.Id, user.Username)
+	}
+
+	return
+}
+
+func getPassword() (pass string, err error) {
+
+	fmt.Print("Enter Password:    ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return
+	}
+	fmt.Println("\nPassword typed: " + string(bytePassword))
+
+	fmt.Print("Re-Enter Password: ")
+	bytePassword2, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return
+	}
+	fmt.Println("\nPassword typed: " + string(bytePassword2))
+
+	if string(bytePassword) != string(bytePassword2) {
+		err = fmt.Errorf("Passwords don't match")
+		return
+	}
+	pass = string(bytePassword)
+	// TODO
 	return
 }
 

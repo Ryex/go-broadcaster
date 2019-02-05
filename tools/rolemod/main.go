@@ -108,7 +108,7 @@ func main() {
 	outFilePath := filepath.Join(root, outFileName)
 	outFilePath, pathErr = filepath.Abs(outFilePath)
 	if pathErr != nil {
-		fmt.Println("could not get absolute path for output file", pathErr)
+		fmt.Println("Could not get absolute path for output file", pathErr)
 	}
 
 	outFile, err := os.Create(outFilePath)

@@ -2,13 +2,16 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-pg/pg"
 	//"github.com/go-pg/pg/orm"
 	"github.com/go-pg/pg/urlvalues"
 	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -139,6 +142,44 @@ func (uq *UserQuery) GetUsers(queryValues url.Values) (users []User, count int, 
 	q := uq.DB.Model(&users)
 	count, err = q.Apply(urlvalues.Pagination(pagervalues)).Column(
 		"id", "username", "roles", "created_at").Relation("Roles").SelectAndCount()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+// GetUsersLimitByName returns users ordering by name
+func (uq *UserQuery) GetUsersLimitByName(order string, limit int, offset int) (users []User, count int, err error) {
+
+	if !utils.StringInSlice(strings.ToUpper(order), []string{"ASC", "DESC"}) {
+		err = fmt.Errorf("order must be one of ASC | DESC")
+		return
+	}
+
+	q := uq.DB.Model(&users)
+	q.OrderExpr("username ?", order)
+	q.Limit(limit)
+	q.Offset(offset)
+	count, err = q.SelectAndCount()
+	if err != nil {
+		logutils.Log.Error("db query error", err)
+	}
+	return
+}
+
+// GetUsersLimitById returns users ordering by Id
+func (uq *UserQuery) GetUsersLimitById(order string, limit int, offset int) (users []User, count int, err error) {
+
+	if !utils.StringInSlice(strings.ToUpper(order), []string{"ASC", "DESC"}) {
+		err = fmt.Errorf("order must be one of ASC | DESC")
+		return
+	}
+
+	q := uq.DB.Model(&users)
+	q.OrderExpr("id ?", order)
+	q.Limit(limit)
+	q.Offset(offset)
+	count, err = q.SelectAndCount()
 	if err != nil {
 		logutils.Log.Error("db query error", err)
 	}
