@@ -160,7 +160,7 @@ func (rq *RoleQuery) GetRoleById(id int64) (r *Role, err error) {
 
 // GetRoles returns users from the Database
 // support pagination
-func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count int, err error) {
+func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []*Role, count int, err error) {
 	//var pagervalues urlvalues.Values
 	//err = urlvalues.Decode(queryValues, pagervalues)
 	q := rq.DB.Model(&roles)
@@ -172,8 +172,8 @@ func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count
 }
 
 // GetRolesByName returns a number of roles from the database by their names,
-func (rq *RoleQuery) GetRolesByName(names []string) (roles []Role, err error) {
-	roles = make([]Role, len(names))
+func (rq *RoleQuery) GetRolesByName(names []string) (roles []*Role, err error) {
+	roles = make([]*Role, len(names))
 	if len(roles) > 0 {
 		err = rq.DB.Model(roles).Where("role.id_str in (?)", pg.In(names)).Relation("Parent").Select()
 		if err != nil {

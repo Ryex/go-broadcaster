@@ -281,27 +281,48 @@ func modifyUser(db *pg.DB, name string, a []string) (err error) {
 	}
 	args := a[1:]
 
+	var cmderr error
+
 	switch cmd {
 	case "chpasswd":
 		if checkLen(args, 0, cmd) {
 			return
 		}
-		// TODO
+		var pass string
+		pass, cmderr = getPassword()
+		if cmderr != nil {
+			return cmderr
+		}
+		u.UpdatePassword(pass)
+		_, cmderr = uq.Update(u)
+		if cmderr != nil {
+			return cmderr
+		}
+		fmt.Printf("Updated password for user '%s'\n", u.Username)
 	case "addrole":
 		if checkLen(args, 1, cmd) {
 			return
 		}
-		// TODO
+		cmderr = addRole(&uq, u, args[0])
+		if cmderr != nil {
+			return cmderr
+		}
 	case "removerole":
 		if checkLen(args, 1, cmd) {
 			return
 		}
-		// TODO
+		cmderr = removeRole(&uq, u, args[0])
+		if cmderr != nil {
+			return cmderr
+		}
 	case "chname":
 		if checkLen(args, 1, cmd) {
 			return
 		}
-		// TODO
+		cmderr = changeName(&uq, u, args[0])
+		if cmderr != nil {
+			return cmderr
+		}
 	default:
 		logutils.Log.Error("Unsupported command: %q", cmd)
 		return
@@ -309,6 +330,63 @@ func modifyUser(db *pg.DB, name string, a []string) (err error) {
 
 	return
 
+}
+
+func addRole(uq *models.UserQuery, u *models.User, roleName string) (err error) {
+
+	rq := models.RoleQuery{
+		DB: uq.DB,
+	}
+
+	r, dberr := rq.GetRoleByName(roleName)
+	if dberr != nil {
+		return dberr
+	}
+
+	u.AddRole(r)
+
+	_, err = uq.Update(u)
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("Added role '%s' to user '%s'", roleName, u.Username)
+	return
+}
+
+func removeRole(uq *models.UserQuery, u *models.User, roleName string) (err error) {
+
+	rq := models.RoleQuery{
+		DB: uq.DB,
+	}
+
+	r, dberr := rq.GetRoleByName(roleName)
+	if dberr != nil {
+		return dberr
+	}
+
+	u.RemoveRole(r)
+
+	_, err = uq.Update(u)
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("Removed role '%s' to user '%s'", roleName, u.Username)
+	return
+
+}
+
+func changeName(uq *models.UserQuery, u *models.User, name string) (err error) {
+	oldName := u.Username
+	u.Username = name
+	_, err = uq.Update(u)
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("Changed username of user Id:%d form '%s' to '%s'", u.Id, oldName, name)
+	return
 }
 
 func listUsers(db *pg.DB, method string, order string, limit int, offset int) (err error) {
