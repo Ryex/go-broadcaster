@@ -76,7 +76,7 @@ func (a *Api) GetLibraryPaths(c echo.Context) error {
 	paths, count, err := q.GetLibraryPaths(c.QueryParams())
 
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 		return c.JSON(http.StatusNotFound, Responce{
 			Err: err,
 		})

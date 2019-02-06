@@ -20,7 +20,7 @@ type User struct {
 	Id        int64
 	Username  string `sql:",unique"`
 	Password  string
-	Roles     []*Role   `pg:"many2many:user_to_roles"`
+	Roles     []Role    `pg:"many2many:user_to_roles"`
 	CreatedAt time.Time `sql:"default:now()"`
 }
 
@@ -77,7 +77,7 @@ func (u *User) AddRole(r *Role) {
 			return
 		}
 	}
-	u.Roles = append(u.Roles, r)
+	u.Roles = append(u.Roles, *r)
 }
 
 // RemoveRole removes a role from the user
@@ -100,7 +100,7 @@ func (u *User) RemoveRole(r *Role) {
 }
 
 // Update updats the user's information
-func (u *User) Update(username string, password string, roles []*Role) {
+func (u *User) Update(username string, password string, roles []Role) {
 	u.Username = username
 	u.Password = password
 	u.Roles = roles
@@ -143,7 +143,7 @@ func (uq *UserQuery) GetUsers(queryValues url.Values) (users []User, count int, 
 	count, err = q.Apply(urlvalues.Pagination(pagervalues)).Column(
 		"id", "username", "roles", "created_at").Relation("Roles").SelectAndCount()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -162,7 +162,7 @@ func (uq *UserQuery) GetUsersLimitByName(order string, limit int, offset int) (u
 	q.Offset(offset)
 	count, err = q.SelectAndCount()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -181,7 +181,7 @@ func (uq *UserQuery) GetUsersLimitById(order string, limit int, offset int) (use
 	q.Offset(offset)
 	count, err = q.SelectAndCount()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -191,7 +191,7 @@ func (uq *UserQuery) GetUserById(id int64) (u *User, err error) {
 	u = new(User)
 	err = uq.DB.Model(u).Where("user.id = ?", id).Relation("Roles").Select()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -201,7 +201,7 @@ func (uq *UserQuery) GetUserByName(name string) (u *User, err error) {
 	u = new(User)
 	err = uq.DB.Model(u).Where("user.username = ?", name).Relation("Roles").Select()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -211,7 +211,7 @@ func (uq *UserQuery) DeleteUserById(id int64) (err error) {
 	u := new(User)
 	_, err = uq.DB.Model(u).Where("user.id = ?", id).Delete()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -246,7 +246,7 @@ func (uq *UserQuery) CreateUser(name string, pass string, roleStrs []string) (u 
 
 	err = uq.DB.Insert(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -256,7 +256,7 @@ func (uq *UserQuery) Update(user *User) (u *User, err error) {
 	u = user
 	uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 
 	return
@@ -289,7 +289,7 @@ func (uq *UserQuery) UpdateUserById(id int64, name string, pass string, roleStrs
 
 	uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 
 	return
@@ -322,7 +322,7 @@ func (uq *UserQuery) UpdateUserByName(name string, pass string, roleStrs []strin
 
 	uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -344,7 +344,7 @@ func (uq *UserQuery) UserByIdAddRoleByName(id int64, rName string) (u *User, err
 	u.AddRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -366,7 +366,7 @@ func (uq *UserQuery) UserByNameAddRoleByName(name string, rName string) (u *User
 	u.AddRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -388,7 +388,7 @@ func (uq *UserQuery) UserByIdRemoveRoleByName(id int64, rName string) (u *User, 
 	u.RemoveRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -410,7 +410,7 @@ func (uq *UserQuery) UserByNameRemoveRoleByName(name string, rName string) (u *U
 	u.RemoveRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -432,7 +432,7 @@ func (uq *UserQuery) UserByIdAddRoleById(id int64, rid int64) (u *User, err erro
 	u.AddRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -454,7 +454,7 @@ func (uq *UserQuery) UserByNameAddRoleById(name string, rid int64) (u *User, err
 	u.AddRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -476,7 +476,7 @@ func (uq *UserQuery) UserByIdRemoveRoleById(id int64, rid int64) (u *User, err e
 	u.RemoveRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -498,7 +498,7 @@ func (uq *UserQuery) UserByNameRemoveRoleById(name string, rid int64) (u *User, 
 	u.RemoveRole(r)
 	err = uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }

@@ -47,7 +47,7 @@ func (lpq *LibraryPathQuery) GetLibraryPaths(queryValues url.Values) (paths []Li
 	q := lpq.DB.Model(&paths)
 	count, err = q.Apply(urlvalues.Pagination(pagervalues)).SelectAndCount()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -56,7 +56,7 @@ func (lpq *LibraryPathQuery) GetLibraryPathById(id int64) (lp *LibraryPath, err 
 	lp = new(LibraryPath)
 	err = lpq.DB.Model(lp).Where("library_path.id = ?", id).Select()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -72,7 +72,7 @@ func (lpq *LibraryPathQuery) AddLibraryPath(path string) (lp *LibraryPath, err e
 	lp.LastIndex = time.Unix(0, 0)
 	err = lpq.DB.Insert(lp)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -81,7 +81,7 @@ func (lpq *LibraryPathQuery) DeleteLibraryPathById(id int64) (err error) {
 	lp := new(LibraryPath)
 	_, err = lpq.DB.Model(lp).Where("library_path.id = ?", id).Delete()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }

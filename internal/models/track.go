@@ -64,7 +64,7 @@ func (tq *TrackQuery) GetTrackById(id int64) (t *Track, err error) {
 	t = new(Track)
 	err = tq.DB.Model(t).Where("track.id = ?", id).Select()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -75,7 +75,7 @@ func (tq *TrackQuery) GetTracks(queryValues url.Values) (tracks []Track, count i
 	q := tq.DB.Model(&tracks)
 	count, err = q.Apply(urlvalues.Pagination(pagervalues)).SelectAndCount()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -88,7 +88,7 @@ func (tq *TrackQuery) AddTrack(path string) (t *Track, err error) {
 	t, err = NewTrack(path)
 	err = tq.DB.Insert(t)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -98,7 +98,7 @@ func (tq *TrackQuery) DeleteTrackById(id int64) (err error) {
 	t := new(Track)
 	_, err = tq.DB.Model(t).Where("track.id = ?", id).Delete()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }

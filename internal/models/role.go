@@ -143,7 +143,7 @@ func (rq *RoleQuery) GetRoleByName(name string) (r *Role, err error) {
 	r = new(Role)
 	err = rq.DB.Model(r).Where("role.id_str = ?", name).Relation("Parent").Select()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -153,29 +153,29 @@ func (rq *RoleQuery) GetRoleById(id int64) (r *Role, err error) {
 	r = new(Role)
 	err = rq.DB.Model(r).Where("role.id = ?", id).Relation("Parent").Select()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
 
 // GetRoles returns users from the Database
 // support pagination
-func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []*Role, count int, err error) {
+func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count int, err error) {
 	//var pagervalues urlvalues.Values
 	//err = urlvalues.Decode(queryValues, pagervalues)
 	q := rq.DB.Model(&roles)
 	count, err = q.Apply(urlvalues.Pagination(queryValues)).Relation("Parent").SelectAndCount()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
 
 // GetRolesByName returns a number of roles from the database by their names,
-func (rq *RoleQuery) GetRolesByName(names []string) (roles []*Role, err error) {
-	roles = make([]*Role, len(names))
+func (rq *RoleQuery) GetRolesByName(names []string) (roles []Role, err error) {
+	roles = make([]Role, len(names))
 	if len(roles) > 0 {
-		err = rq.DB.Model(roles).Where("role.id_str in (?)", pg.In(names)).Relation("Parent").Select()
+		err = rq.DB.Model(&roles).Where("role.id_str in (?)", pg.In(names)).Relation("Parent").Select()
 		if err != nil {
 			logutils.Log.Error("db query error: %s", err)
 		}
@@ -191,7 +191,7 @@ func (rq *RoleQuery) CreateRole(name string, perms []string, parent *Role) (r *R
 	}
 	err = rq.DB.Insert(r)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -201,7 +201,7 @@ func (rq *RoleQuery) Update(role *Role) (r *Role, err error) {
 	r = role
 	err = rq.DB.Update(r)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -210,7 +210,7 @@ func (rq *RoleQuery) Update(role *Role) (r *Role, err error) {
 func (rq *RoleQuery) UpdateRoleById(id int64, name string, perms []string, parent *Role) (r *Role, err error) {
 	r, err = rq.GetRoleById(id)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 
 	if name == "" {
@@ -221,7 +221,7 @@ func (rq *RoleQuery) UpdateRoleById(id int64, name string, perms []string, paren
 
 	err = rq.DB.Update(r)
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
@@ -231,7 +231,7 @@ func (rq *RoleQuery) DeleteRoleById(id int64) (err error) {
 	r := new(Role)
 	_, err = rq.DB.Model(r).Where("role.id = ?", id).Delete()
 	if err != nil {
-		logutils.Log.Error("db query error", err)
+		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }

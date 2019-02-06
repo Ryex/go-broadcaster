@@ -209,7 +209,7 @@ func addUser(db *pg.DB, name string, rolesStr string) (err error) {
 
 	u, err := uq.GetUserByName(name)
 	fmt.Printf("Info: User: '%v' Error: '%s'\n", u, err)
-	if u != nil {
+	if err == nil {
 		err = fmt.Errorf("User '%s' already exists", name)
 		return
 	}
