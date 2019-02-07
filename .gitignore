@@ -47,3 +47,7 @@ web/selenium-debug.log
 
 # loose sql files from tools in the top level directory
 /*.sql
+
+# ignore generated files
+*_vfsdata.go
+*-packr.go

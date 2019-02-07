@@ -5,7 +5,7 @@ package main
 import (
 	"log"
 
-	"github.com/ryex/go-broadcaster/web/client"
+	"github.com/ryex/go-broadcaster/cmd/gobcast-web/client"
 
 	"github.com/shurcooL/vfsgen"
 )

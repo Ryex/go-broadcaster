@@ -271,7 +271,7 @@ func (a *Api) GetRoleByID(c echo.Context) error {
 func (a *Api) AddRole(c echo.Context) error {
 	name := c.FormValue("name")
 	perms := strings.Split(c.FormValue("permissions"), ",")
-	parentStrs := strings.Split(c.FormValue("parents"), ",")
+	parentStr := c.FormValue("parent")
 
 	if name == "" {
 		return c.JSON(http.StatusBadRequest, Responce{
@@ -283,11 +283,11 @@ func (a *Api) AddRole(c echo.Context) error {
 		DB: a.DB,
 	}
 
-	var parents []models.Role
+	var parent *models.Role
 	var err error
 
-	if len(parentStrs) > 0 {
-		parents, err = rq.GetRolesByName(parentStrs)
+	if parentStr != "" {
+		parent, err = rq.GetRoleByName(parentStr)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, Responce{
 				Err: err,
@@ -295,7 +295,7 @@ func (a *Api) AddRole(c echo.Context) error {
 		}
 	}
 
-	r, err := rq.CreateRole(name, perms, parents)
+	r, err := rq.CreateRole(name, perms, parent)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, Responce{
 			Err: err,
@@ -356,12 +356,12 @@ func (a *Api) UpdateRoleByID(c echo.Context) error {
 
 	name := c.FormValue("name")
 	perms := strings.Split(c.FormValue("permissions"), ",")
-	parentStrs := strings.Split(c.FormValue("parents"), ",")
+	parentStr := c.FormValue("parent")
 
-	var parents []models.Role
+	var parent *models.Role
 
-	if len(parentStrs) > 0 {
-		parents, err = rq.GetRolesByName(parentStrs)
+	if parentStr != "" {
+		parent, err = rq.GetRoleByName(parentStr)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, Responce{
 				Err: err,
@@ -369,7 +369,7 @@ func (a *Api) UpdateRoleByID(c echo.Context) error {
 		}
 	}
 
-	r, err := rq.UpdateRoleByID(id, name, perms, parents)
+	r, err := rq.UpdateRoleByID(id, name, perms, parent)
 
 	if err != nil {
 		return c.JSON(http.StatusNotFound, Responce{

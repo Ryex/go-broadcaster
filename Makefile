@@ -22,9 +22,9 @@ webserver: _godeps webclient
 ifneq ($(MODE), production)
 	$(GO) build -o ./bin/gobcast-web$(GOEXE) -tags=dev ./cmd/gobcast-web
 else
-	cp -r ./bin/dist ./cmd.gobcast-web/client
+	cp -r ./bin/dist ./cmd/gobcast-web/client
 	$(GO)	generate ./cmd/gobcast-web/client
-	rm -rf ./cmd.gobcast-web/client/dist
+	rm -rf ./cmd/gobcast-web/client/dist
 	$(GO) build -o ./bin/gobcast-web$(GOEXE) ./cmd/gobcast-web
 endif
 
@@ -35,13 +35,13 @@ ifneq ($(MODE), production)
 else
 	cd ./web && $(NPMRUN) build
 endif
-	cp -r ./web/dist ./bin/dist
+	cp -r ./web/dist ./bin
 
 _godeps: go.mod
 	$(GO) mod download
 
 _npmdeps:
-	$(NPM) install
+	cd ./web && $(NPM) install
 
 tools: dbproto migrate rolemod usermod
 
