@@ -12,29 +12,30 @@ MODE ?= production
 
 default: build
 
-build: mediamonitor web
+build: mediamon webserver
 
-mediamonitor: _godeps
-	$(GO) build -o ./bin/media-monitor$(GOEXE) ./cmd/media-monitor
-
-web: webserver
+mediamon: _godeps
+	$(GO) build -o ./bin/gobroadcaster-mediamon$(GOEXE) ./cmd/gobroadcaster-mediamon
 
 webserver: _godeps webclient
+	mkdir -p ./bin
 ifneq ($(MODE), production)
-	$(GO) build -o ./bin/webserver$(GOEXE) -tags=dev ./web
+	$(GO) build -o ./bin/gobroadcaster-web$(GOEXE) -tags=dev ./cmd/gobroadcaster-web
 else
-	$(GO)	generate ./web/client
-	$(GO) build -o ./bin/webserver$(GOEXE) ./web
+	cp -r ./bin/dist ./cmd.gobroadcaster-web/client
+	$(GO)	generate ./cmd/gobroadcaster-web/client
+	rm -rf ./cmd.gobroadcaster-web/client/dist
+	$(GO) build -o ./bin/gobroadcaster-web$(GOEXE) ./cmd/gobroadcaster-web
 endif
 
 webclient: _npmdeps
+	mkdir -p ./bin
 ifneq ($(MODE), production)
-	cd ./web/client && $(NPMRUN) dev-build
+	cd ./web && $(NPMRUN) dev-build
 else
-	cd ./web/client && $(NPMRUN) build
+	cd ./web && $(NPMRUN) build
 endif
-	mkdir -p ./bin/dist
-	cp -r ./web/client/dist ./bin/dist
+	cp -r ./web/dist ./bin/dist
 
 _godeps: go.mod
 	$(GO) mod download
