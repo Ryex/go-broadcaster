@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-pg/pg"
-	//"github.com/go-pg/pg/orm"
+	"github.com/go-pg/pg/orm"
 	"github.com/go-pg/pg/urlvalues"
 	"github.com/ryex/go-broadcaster/internal/logutils"
 )
@@ -131,6 +131,19 @@ func (r *Role) Update(name string, perms []string, parent *Role) {
 	for _, perm := range perms {
 		r.Assign(perm)
 	}
+}
+
+func (r *Role) AfterQuery(db orm.DB) error {
+	if r.ParentID != 0 && r.Parent == nil {
+		var role Role
+		err := db.Model(&role).Where("role.id = ?", r.ParentID).Select()
+		if err != nil {
+			logutils.Log.Error("db query error %s", err)
+			return err
+		}
+		r.Parent = &role
+	}
+	return nil
 }
 
 // RoleQuery handles Role model queries on the database

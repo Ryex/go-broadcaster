@@ -143,6 +143,23 @@ func (u *User) AfterUpdate(db orm.DB) error {
 	return u._ensureRoles(db)
 }
 
+// AfterDelete runs after the model is updated and ensures all the
+// role relations in the database are deleted too
+func (u *User) AfterDelete(db orm.DB) error {
+	_, err := db.Model((*UserToRole)(nil)).
+		Where("user_id = ?", u.ID).
+		Delete()
+	if err != nil {
+		logutils.Log.Errorf(
+			"error removing old role relations for deleted user '%d:%s': %s",
+			err,
+			u.ID,
+			u.Username)
+		return err
+	}
+	return nil
+}
+
 func (u *User) _getRoleIds() []int64 {
 	ids := make([]int64, len(u.Roles))
 	for i, role := range u.Roles {
@@ -229,23 +246,6 @@ func (u *User) _insertRoleRelations(db orm.DB, toInsert ...interface{}) error {
 			logutils.Log.Errorf("error inserting new role relations: %s", err)
 			return err
 		}
-	}
-	return nil
-}
-
-// AfterDelete runs after the model is updated and ensures all the
-// role relations in the database are deleted too
-func (u *User) AfterDelete(db orm.DB) error {
-	_, err := db.Model((*UserToRole)(nil)).
-		Where("user_id = ?", u.ID).
-		Delete()
-	if err != nil {
-		logutils.Log.Errorf(
-			"error removing old role relations for deleted user '%d:%s': %s",
-			err,
-			u.ID,
-			u.Username)
-		return err
 	}
 	return nil
 }

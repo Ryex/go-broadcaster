@@ -431,7 +431,7 @@ func describeUser(db *pg.DB, name string) (err error) {
 
 	u, err := uq.GetUserByName(name)
 	if err != nil {
-		err = fmt.Errorf("User '%s' does not exist exists: %s", name, err)
+		err = fmt.Errorf("Error pulling user '%s': %s", name, err)
 		return
 	}
 
