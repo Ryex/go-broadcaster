@@ -3,14 +3,26 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/ryex/go-broadcaster/internal/logutils"
 )
 
-// StringInSlice tests if a string exists in a list of strings
+// StringInSlice tests if a string exists in a slice of strings
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+// GenericDEContaines tests if interface{} e exists in [](interface{}) s
+// uses a linear search and golang.org/pkg/reflect/#DeepEqual
+func GenericDEContaines(s [](interface{}), e interface{}) bool {
+	for _, a := range s {
+		if reflect.DeepEqual(a, e) {
 			return true
 		}
 	}

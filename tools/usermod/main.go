@@ -47,6 +47,8 @@ Command Arguments:
 		- order - string, one of ASC | DESC
 		- limit - optional, limit for the number of object returned
 		- offset - offset to start listing at
+	- describe <name>
+		- name - name of user to describe
 Arguments:
 `
 
@@ -191,6 +193,15 @@ func main() {
 			logutils.Log.Error("Error listing users: %s", cmderr)
 			return
 		}
+	case "describe":
+		if checkLen(args, 1, cmd) {
+			return
+		}
+		cmderr = describeUser(db, args[0])
+		if cmderr != nil {
+			logutils.Log.Error("Error describing user: %s", cmderr)
+			return
+		}
 	default:
 		logutils.Log.Error("Unsupported command: %q", cmd)
 		return
@@ -208,9 +219,8 @@ func addUser(db *pg.DB, name string, rolesStr string) (err error) {
 	}
 
 	u, err := uq.GetUserByName(name)
-	fmt.Printf("Info: User: '%v' Error: '%s'\n", u, err)
 	if err == nil {
-		err = fmt.Errorf("User '%s' already exists", name)
+		err = fmt.Errorf("User '%s' does not exist exists: %s", name, err)
 		return
 	}
 
@@ -227,12 +237,12 @@ func addUser(db *pg.DB, name string, rolesStr string) (err error) {
 		return
 	}
 
-	user, err := uq.CreateUser(name, pass, roleNames)
+	u, err = uq.CreateUser(name, pass, roleNames)
 	if err != nil {
 		return
 	}
 
-	fmt.Printf("Created user %+v\n", user)
+	fmt.Printf("Created user %+v\n", u)
 
 	return
 }
@@ -251,7 +261,7 @@ func removeUser(db *pg.DB, name string) (err error) {
 	// clear the error from no user?
 	err = nil
 
-	err = uq.DeleteUserById(u.Id)
+	err = uq.DeleteUserByID(u.ID)
 	if err != nil {
 		return
 	}
@@ -385,7 +395,7 @@ func changeName(uq *models.UserQuery, u *models.User, name string) (err error) {
 		return
 	}
 
-	fmt.Printf("Changed username of user Id:%d form '%s' to '%s'", u.Id, oldName, name)
+	fmt.Printf("Changed username of user ID:%d form '%s' to '%s'", u.ID, oldName, name)
 	return
 }
 
@@ -398,7 +408,7 @@ func listUsers(db *pg.DB, method string, order string, limit int, offset int) (e
 	var count int
 	switch strings.ToUpper(method) {
 	case "ID":
-		users, count, err = uq.GetUsersLimitById(order, limit, offset)
+		users, count, err = uq.GetUsersLimitByID(order, limit, offset)
 	case "NAME":
 		users, count, err = uq.GetUsersLimitByName(order, limit, offset)
 	default:
@@ -408,10 +418,39 @@ func listUsers(db *pg.DB, method string, order string, limit int, offset int) (e
 
 	fmt.Printf("Count: %d \n", count)
 	for _, user := range users {
-		fmt.Printf("%d: %s \n", user.Id, user.Username)
+		fmt.Printf("%d: %s \n", user.ID, user.Username)
 	}
 
 	return
+}
+
+func describeUser(db *pg.DB, name string) (err error) {
+	uq := models.UserQuery{
+		DB: db,
+	}
+
+	u, err := uq.GetUserByName(name)
+	if err != nil {
+		err = fmt.Errorf("User '%s' does not exist exists: %s", name, err)
+		return
+	}
+
+	fmt.Printf("User: %d\n", u.ID)
+	fmt.Printf(" - Username: %s\n", u.Username)
+	fmt.Printf(" - Created At: %s\n", u.CreatedAt)
+	fmt.Println(" - Roles:")
+	if len(u.Roles) > 0 {
+		for _, r := range u.Roles {
+			fmt.Printf(" - - %d: %s\n", r.ID, r.IDStr)
+			if r.ParentID != 0 {
+				fmt.Printf(" - - - Parent: %d: %+v\n", r.ParentID, r.Parent)
+			}
+		}
+	} else {
+		fmt.Println(" - - NONE")
+	}
+
+	return nil
 }
 
 func getPassword() (pass string, err error) {

@@ -110,14 +110,14 @@ func main() {
 		// create schema but error if tables exist
 		err = models.CreateSchema(db, false)
 		if err != nil {
-			logutils.Log.Error("Error creating Schema", err)
+			logutils.Log.Error("Error creating Schema: %s", err)
 		}
 	case "drop":
 		fmt.Println("Droping Database Model Schema:")
 		// drop tables if they exist but don't cascade
 		err = models.DropSchema(db, true, false)
 		if err != nil {
-			logutils.Log.Error("Error droping Schema", err)
+			logutils.Log.Error("Error droping Schema: %s", err)
 		}
 	case "list":
 		fmt.Println("Models used:")

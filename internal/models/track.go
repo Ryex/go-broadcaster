@@ -14,7 +14,7 @@ import (
 )
 
 type Track struct {
-	Id         int64
+	ID         int64
 	Title      string
 	Album      string
 	Artist     string
@@ -60,7 +60,7 @@ type TrackQuery struct {
 	DB *pg.DB
 }
 
-func (tq *TrackQuery) GetTrackById(id int64) (t *Track, err error) {
+func (tq *TrackQuery) GetTrackByID(id int64) (t *Track, err error) {
 	t = new(Track)
 	err = tq.DB.Model(t).Where("track.id = ?", id).Select()
 	if err != nil {
@@ -93,8 +93,8 @@ func (tq *TrackQuery) AddTrack(path string) (t *Track, err error) {
 	return
 }
 
-// DeleteTrackById removes a track from the database useing the Id
-func (tq *TrackQuery) DeleteTrackById(id int64) (err error) {
+// DeleteTrackByID removes a track from the database useing the ID
+func (tq *TrackQuery) DeleteTrackByID(id int64) (err error) {
 	t := new(Track)
 	_, err = tq.DB.Model(t).Where("track.id = ?", id).Delete()
 	if err != nil {

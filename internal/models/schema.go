@@ -55,7 +55,9 @@ func DropSchema(db *pg.DB, ife bool, cascade bool) error {
 	tableOpts.IfExists = ife
 	tableOpts.Cascade = cascade
 
-	for _, model := range Models {
+	// itterate in reverse so relation refrences don't casue problems
+	for i := len(Models) - 1; i >= 0; i-- {
+		model := Models[i]
 		fmt.Printf("Droping table for model %s\n", reflect.TypeOf(model).Elem().Name())
 		err := db.DropTable(model, tableOpts)
 		if err != nil {

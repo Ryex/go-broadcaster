@@ -8,12 +8,12 @@ import (
 func init() {
 	roles := []models.Role{
 		models.Role{
-			Id:    1,
-			IdStr: "Admin",
+			ID:    1,
+			IDStr: "Admin",
 			Perms: map[string]bool{
 				"admin": true,
 			},
-			ParentId: 0,
+			ParentID: 0,
 		},
 	}
 

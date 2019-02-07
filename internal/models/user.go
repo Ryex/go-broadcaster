@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-pg/pg"
-	//"github.com/go-pg/pg/orm"
+	"github.com/go-pg/pg/orm"
 	"github.com/go-pg/pg/urlvalues"
 	"github.com/ryex/go-broadcaster/internal/logutils"
 	"github.com/ryex/go-broadcaster/internal/utils"
@@ -17,17 +17,19 @@ import (
 
 // User is the model that holds user information
 type User struct {
-	Id        int64
+	ID        int64
 	Username  string `sql:",unique"`
 	Password  string
 	Roles     []Role    `pg:"many2many:user_to_roles"`
 	CreatedAt time.Time `sql:"default:now()"`
 }
 
-// ManyToMany join table for users and roles
+// UserToRole is a ManyToMany join table for users and roles
 type UserToRole struct {
-	UserId int
-	RoleId int
+	UserID int64
+	User   *User
+	RoleID int64
+	Role   *Role
 }
 
 // HasPermit returns if ANY role of the user has the given permission
@@ -73,7 +75,7 @@ func (u *User) MatchHashPass(pass string) bool {
 // AddRole adds a role to the user
 func (u *User) AddRole(r *Role) {
 	for _, role := range u.Roles {
-		if r.IdStr == role.IdStr {
+		if r.IDStr == role.IDStr {
 			return
 		}
 	}
@@ -85,7 +87,7 @@ func (u *User) RemoveRole(r *Role) {
 
 	delPos := -1
 	for i, role := range u.Roles {
-		if r.IdStr == role.IdStr {
+		if r.IDStr == role.IDStr {
 			delPos = i
 			break
 		}
@@ -129,6 +131,125 @@ func (u *User) GetRoleNames() (names []string) {
 	return
 }
 
+// AfterInsert runs after the model is insterted and ensures all the
+// role relations are in the database and synced
+func (u *User) AfterInsert(db orm.DB) error {
+	return u._ensureRoles(db)
+}
+
+// AfterInsert runs after the model is updated and ensures all the
+// role relations are in the database and synced
+func (u *User) AfterUpdate(db orm.DB) error {
+	return u._ensureRoles(db)
+}
+
+func (u *User) _getRoleIds() []int64 {
+	ids := make([]int64, len(u.Roles))
+	for i, role := range u.Roles {
+		ids[i] = role.ID
+	}
+	return ids
+}
+
+func (u *User) _ensureRoles(db orm.DB) error {
+
+	// pull relation roles form the database
+	var userToRoleMaps []UserToRole
+	err := db.Model(&userToRoleMaps).Where("user_id = ?", u.ID).Select()
+	if err != nil {
+		logutils.Log.Errorf("error pulling role relations: %s", err)
+		return err
+	}
+
+	// pull the ids out of the map
+	dbRoleIds := make([]interface{}, len(userToRoleMaps))
+	for i, m := range userToRoleMaps {
+		dbRoleIds[i] = m.RoleID
+	}
+
+	roleIds := make([]interface{}, len(u.Roles))
+	for i, v := range u._getRoleIds() {
+		roleIds[i] = v
+	}
+
+	// find the ids that need to be removed
+	toDelete := make([]interface{}, 0)
+
+	for _, id := range dbRoleIds {
+		if !utils.GenericDEContaines(roleIds, id) {
+			toDelete = append(toDelete, id)
+		}
+	}
+
+	// find the ids that need to be added
+	toInsert := make([]interface{}, 0)
+
+	for _, id := range roleIds {
+		if !utils.GenericDEContaines(dbRoleIds, id) {
+			toInsert = append(toInsert, id)
+		}
+	}
+
+	if err = u._deleteRoleRelations(db, toDelete...); err != nil {
+		return err
+	}
+
+	if err = u._insertRoleRelations(db, toInsert...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *User) _deleteRoleRelations(db orm.DB, toDelete ...interface{}) error {
+	if len(toDelete) > 0 {
+		_, err := db.Model((*UserToRole)(nil)).
+			Where("user_id = ?", u.ID).
+			WhereIn("role_id IN (?)", toDelete...).
+			Delete()
+		if err != nil {
+			logutils.Log.Errorf("error removing old role relations: %s", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *User) _insertRoleRelations(db orm.DB, toInsert ...interface{}) error {
+	if len(toInsert) > 0 {
+		toInsertMaps := make([]UserToRole, 0)
+		for _, id := range toInsert {
+			toInsertMaps = append(toInsertMaps, UserToRole{
+				UserID: u.ID,
+				RoleID: id.(int64),
+			})
+		}
+		_, err := db.Model(&toInsertMaps).Insert()
+		if err != nil {
+			logutils.Log.Errorf("error inserting new role relations: %s", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// AfterDelete runs after the model is updated and ensures all the
+// role relations in the database are deleted too
+func (u *User) AfterDelete(db orm.DB) error {
+	_, err := db.Model((*UserToRole)(nil)).
+		Where("user_id = ?", u.ID).
+		Delete()
+	if err != nil {
+		logutils.Log.Errorf(
+			"error removing old role relations for deleted user '%d:%s': %s",
+			err,
+			u.ID,
+			u.Username)
+		return err
+	}
+	return nil
+}
+
 // UserQuery handles model quieries for the User model
 type UserQuery struct {
 	DB *pg.DB
@@ -157,7 +278,7 @@ func (uq *UserQuery) GetUsersLimitByName(order string, limit int, offset int) (u
 	}
 
 	q := uq.DB.Model(&users)
-	q.OrderExpr("username ?", order)
+	q.Order(fmt.Sprintf("user.username %s", order))
 	q.Limit(limit)
 	q.Offset(offset)
 	count, err = q.SelectAndCount()
@@ -167,8 +288,8 @@ func (uq *UserQuery) GetUsersLimitByName(order string, limit int, offset int) (u
 	return
 }
 
-// GetUsersLimitById returns users ordering by Id
-func (uq *UserQuery) GetUsersLimitById(order string, limit int, offset int) (users []User, count int, err error) {
+// GetUsersLimitByID returns users ordering by ID
+func (uq *UserQuery) GetUsersLimitByID(order string, limit int, offset int) (users []User, count int, err error) {
 
 	if !utils.StringInSlice(strings.ToUpper(order), []string{"ASC", "DESC"}) {
 		err = fmt.Errorf("order must be one of ASC | DESC")
@@ -176,7 +297,7 @@ func (uq *UserQuery) GetUsersLimitById(order string, limit int, offset int) (use
 	}
 
 	q := uq.DB.Model(&users)
-	q.OrderExpr("id ?", order)
+	q.Order(fmt.Sprintf("user.id %s", order))
 	q.Limit(limit)
 	q.Offset(offset)
 	count, err = q.SelectAndCount()
@@ -186,10 +307,10 @@ func (uq *UserQuery) GetUsersLimitById(order string, limit int, offset int) (use
 	return
 }
 
-// GetUserById returns a user from the database by Id
-func (uq *UserQuery) GetUserById(id int64) (u *User, err error) {
+// GetUserByID returns a user from the database by ID
+func (uq *UserQuery) GetUserByID(id int64) (u *User, err error) {
 	u = new(User)
-	err = uq.DB.Model(u).Where("user.id = ?", id).Relation("Roles").Select()
+	err = uq.DB.Model(u).Where("id = ?", id).Relation("Roles").Select()
 	if err != nil {
 		logutils.Log.Error("db query error %s", err)
 	}
@@ -199,19 +320,19 @@ func (uq *UserQuery) GetUserById(id int64) (u *User, err error) {
 // GetUserByName returns a user from the database by name
 func (uq *UserQuery) GetUserByName(name string) (u *User, err error) {
 	u = new(User)
-	err = uq.DB.Model(u).Where("user.username = ?", name).Relation("Roles").Select()
+	err = uq.DB.Model(u).Where("username = ?", name).Relation("Roles").Select()
 	if err != nil {
 		logutils.Log.Error("db query error %s", err)
 	}
 	return
 }
 
-// DeleteUserById removes a user from the database by Id
-func (uq *UserQuery) DeleteUserById(id int64) (err error) {
+// DeleteUserByID removes a user from the database by ID
+func (uq *UserQuery) DeleteUserByID(id int64) (err error) {
 	u := new(User)
-	_, err = uq.DB.Model(u).Where("user.id = ?", id).Delete()
+	_, err = uq.DB.Model(u).Where("id = ?", id).Delete()
 	if err != nil {
-		logutils.Log.Error("db query error %s", err)
+		logutils.Log.Error("db query error: %s", err)
 	}
 	return
 }
@@ -232,21 +353,18 @@ func (uq *UserQuery) CreateUser(name string, pass string, roleStrs []string) (u 
 		return
 	}
 
-	// hash the password so we dont store it plaintext
-	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-	if err != nil {
-		logutils.Log.Error("password hashing error", err)
-		return
-	}
-
 	u = new(User)
 	u.Username = name
-	u.Password = string(hashpass)
+	err = u.UpdatePassword(pass)
+	if err != nil {
+		logutils.Log.Error("password hashing error: %s", err)
+		return
+	}
 	u.Roles = roles
 
 	err = uq.DB.Insert(u)
 	if err != nil {
-		logutils.Log.Error("db query error %s", err)
+		logutils.Log.Error("db query error: %s", err)
 	}
 	return
 }
@@ -256,15 +374,15 @@ func (uq *UserQuery) Update(user *User) (u *User, err error) {
 	u = user
 	uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error %s", err)
+		logutils.Log.Error("db query error: %s", err)
 	}
 
 	return
 }
 
-// UpdateUserById updates a user's information by Id
-func (uq *UserQuery) UpdateUserById(id int64, name string, pass string, roleStrs []string) (u *User, err error) {
-	u, err = uq.GetUserById(id)
+// UpdateUserByID updates a user's information by ID
+func (uq *UserQuery) UpdateUserByID(id int64, name string, pass string, roleStrs []string) (u *User, err error) {
+	u, err = uq.GetUserByID(id)
 	if err != nil {
 		return
 	}
@@ -281,7 +399,7 @@ func (uq *UserQuery) UpdateUserById(id int64, name string, pass string, roleStrs
 	// hash the password so we dont store it plaintext
 	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
-		logutils.Log.Error("password hashing error", err)
+		logutils.Log.Error("password hashing error: %s", err)
 		return
 	}
 
@@ -289,7 +407,7 @@ func (uq *UserQuery) UpdateUserById(id int64, name string, pass string, roleStrs
 
 	uq.DB.Update(u)
 	if err != nil {
-		logutils.Log.Error("db query error %s", err)
+		logutils.Log.Error("db query error: %s", err)
 	}
 
 	return
@@ -314,7 +432,7 @@ func (uq *UserQuery) UpdateUserByName(name string, pass string, roleStrs []strin
 	// hash the password so we dont store it plaintext
 	hashpass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
-		logutils.Log.Error("password hashing error", err)
+		logutils.Log.Error("password hashing error: %s", err)
 		return
 	}
 
@@ -327,10 +445,10 @@ func (uq *UserQuery) UpdateUserByName(name string, pass string, roleStrs []strin
 	return
 }
 
-// UserByIdAddRoleByName adds a role in the databases found by name
-// to a user in the database found by Id
-func (uq *UserQuery) UserByIdAddRoleByName(id int64, rName string) (u *User, err error) {
-	u, err = uq.GetUserById(id)
+// UserByIDAddRoleByName adds a role in the databases found by name
+// to a user in the database found by ID
+func (uq *UserQuery) UserByIDAddRoleByName(id int64, rName string) (u *User, err error) {
+	u, err = uq.GetUserByID(id)
 	if err != nil {
 		return
 	}
@@ -371,10 +489,10 @@ func (uq *UserQuery) UserByNameAddRoleByName(name string, rName string) (u *User
 	return
 }
 
-// UserByIdRemoveRoleByName removes a role in the databases found by name
-// to a user in the database found by Id
-func (uq *UserQuery) UserByIdRemoveRoleByName(id int64, rName string) (u *User, err error) {
-	u, err = uq.GetUserById(id)
+// UserByIDRemoveRoleByName removes a role in the databases found by name
+// to a user in the database found by ID
+func (uq *UserQuery) UserByIDRemoveRoleByName(id int64, rName string) (u *User, err error) {
+	u, err = uq.GetUserByID(id)
 	if err != nil {
 		return
 	}
@@ -415,17 +533,17 @@ func (uq *UserQuery) UserByNameRemoveRoleByName(name string, rName string) (u *U
 	return
 }
 
-// UserByIdAddRoleById adds a role in the databases found by Id
-// to a user in the database found by Id
-func (uq *UserQuery) UserByIdAddRoleById(id int64, rid int64) (u *User, err error) {
-	u, err = uq.GetUserById(id)
+// UserByIDAddRoleByID adds a role in the databases found by ID
+// to a user in the database found by ID
+func (uq *UserQuery) UserByIDAddRoleByID(id int64, rid int64) (u *User, err error) {
+	u, err = uq.GetUserByID(id)
 	if err != nil {
 		return
 	}
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleById(rid)
+	r, err := rq.GetRoleByID(rid)
 	if err != nil {
 		return
 	}
@@ -437,9 +555,9 @@ func (uq *UserQuery) UserByIdAddRoleById(id int64, rid int64) (u *User, err erro
 	return
 }
 
-// UserByNameAddRoleById adds a role in the databases found by Id
+// UserByNameAddRoleByID adds a role in the databases found by ID
 // to a user in the database found by name
-func (uq *UserQuery) UserByNameAddRoleById(name string, rid int64) (u *User, err error) {
+func (uq *UserQuery) UserByNameAddRoleByID(name string, rid int64) (u *User, err error) {
 	u, err = uq.GetUserByName(name)
 	if err != nil {
 		return
@@ -447,7 +565,7 @@ func (uq *UserQuery) UserByNameAddRoleById(name string, rid int64) (u *User, err
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleById(rid)
+	r, err := rq.GetRoleByID(rid)
 	if err != nil {
 		return
 	}
@@ -459,17 +577,17 @@ func (uq *UserQuery) UserByNameAddRoleById(name string, rid int64) (u *User, err
 	return
 }
 
-// UserByIdRemoveRoleById removes a role in the databases found by Id
-// to a user in the database found by Id
-func (uq *UserQuery) UserByIdRemoveRoleById(id int64, rid int64) (u *User, err error) {
-	u, err = uq.GetUserById(id)
+// UserByIDRemoveRoleByID removes a role in the databases found by ID
+// to a user in the database found by ID
+func (uq *UserQuery) UserByIDRemoveRoleByID(id int64, rid int64) (u *User, err error) {
+	u, err = uq.GetUserByID(id)
 	if err != nil {
 		return
 	}
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleById(rid)
+	r, err := rq.GetRoleByID(rid)
 	if err != nil {
 		return
 	}
@@ -481,9 +599,9 @@ func (uq *UserQuery) UserByIdRemoveRoleById(id int64, rid int64) (u *User, err e
 	return
 }
 
-// UserByNameRemoveRoleById removes a role in the databases found by Id
+// UserByNameRemoveRoleByID removes a role in the databases found by ID
 // to a user in the database found by name
-func (uq *UserQuery) UserByNameRemoveRoleById(name string, rid int64) (u *User, err error) {
+func (uq *UserQuery) UserByNameRemoveRoleByID(name string, rid int64) (u *User, err error) {
 	u, err = uq.GetUserByName(name)
 	if err != nil {
 		return
@@ -491,7 +609,7 @@ func (uq *UserQuery) UserByNameRemoveRoleById(name string, rid int64) (u *User, 
 	rq := RoleQuery{
 		DB: uq.DB,
 	}
-	r, err := rq.GetRoleById(rid)
+	r, err := rq.GetRoleByID(rid)
 	if err != nil {
 		return
 	}

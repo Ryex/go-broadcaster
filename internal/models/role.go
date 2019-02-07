@@ -30,9 +30,9 @@ func (p Permissions) Deny(perm string) bool {
 
 // Role is a struct for holding user rolle Permissions.
 type Role struct {
-	Id       int64
-	IdStr    string `sql:",unique"`
-	ParentId int64
+	ID       int64
+	IDStr    string `sql:",unique"`
+	ParentID int64
 	Parent   *Role
 	Perms    Permissions
 }
@@ -42,12 +42,12 @@ type Role struct {
 func NewRole(id string, parent *Role) *Role {
 	var pid int64
 	if parent != nil {
-		pid = parent.Id
+		pid = parent.ID
 	}
 	role := &Role{
-		IdStr:    id,
+		IDStr:    id,
 		Perms:    make(Permissions),
-		ParentId: pid,
+		ParentID: pid,
 		Parent:   parent,
 	}
 	return role
@@ -55,7 +55,7 @@ func NewRole(id string, parent *Role) *Role {
 
 // Name returns the Role's name.
 func (r *Role) Name() string {
-	return r.IdStr
+	return r.IDStr
 }
 
 // Assign grants a permission to the role.
@@ -113,19 +113,19 @@ func (r *Role) Deny(p string) bool {
 }
 
 func (r *Role) SetParent(prole *Role) {
-	r.ParentId = prole.Id
+	r.ParentID = prole.ID
 	r.Parent = prole
 }
 
 // Update updates all the information for a role
 func (r *Role) Update(name string, perms []string, parent *Role) {
-	r.IdStr = name
+	r.IDStr = name
 	r.Perms = make(Permissions)
 	r.Parent = parent
 	if parent != nil {
-		r.ParentId = parent.Id
+		r.ParentID = parent.ID
 	} else {
-		r.ParentId = 0
+		r.ParentID = 0
 	}
 
 	for _, perm := range perms {
@@ -148,8 +148,8 @@ func (rq *RoleQuery) GetRoleByName(name string) (r *Role, err error) {
 	return
 }
 
-// GetRoleById returns a Role from the database by Id
-func (rq *RoleQuery) GetRoleById(id int64) (r *Role, err error) {
+// GetRoleByID returns a Role from the database by ID
+func (rq *RoleQuery) GetRoleByID(id int64) (r *Role, err error) {
 	r = new(Role)
 	err = rq.DB.Model(r).Where("role.id = ?", id).Relation("Parent").Select()
 	if err != nil {
@@ -175,7 +175,8 @@ func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count
 func (rq *RoleQuery) GetRolesByName(names []string) (roles []Role, err error) {
 	roles = make([]Role, len(names))
 	if len(roles) > 0 {
-		err = rq.DB.Model(&roles).Where("role.id_str in (?)", pg.In(names)).Relation("Parent").Select()
+		err = rq.DB.Model(&roles).Where("role.id_str in (?)", pg.In(names)).
+			Relation("Parent").Select()
 		if err != nil {
 			logutils.Log.Error("db query error: %s", err)
 		}
@@ -206,15 +207,15 @@ func (rq *RoleQuery) Update(role *Role) (r *Role, err error) {
 	return
 }
 
-// UpdateRoleById updates a role's information in the database by it's Id
-func (rq *RoleQuery) UpdateRoleById(id int64, name string, perms []string, parent *Role) (r *Role, err error) {
-	r, err = rq.GetRoleById(id)
+// UpdateRoleByID updates a role's information in the database by it's ID
+func (rq *RoleQuery) UpdateRoleByID(id int64, name string, perms []string, parent *Role) (r *Role, err error) {
+	r, err = rq.GetRoleByID(id)
 	if err != nil {
 		logutils.Log.Error("db query error %s", err)
 	}
 
 	if name == "" {
-		name = r.IdStr
+		name = r.IDStr
 	}
 
 	r.Update(name, perms, parent)
@@ -226,8 +227,8 @@ func (rq *RoleQuery) UpdateRoleById(id int64, name string, perms []string, paren
 	return
 }
 
-// DeleteRoleById removes a role from the database by it's Id.
-func (rq *RoleQuery) DeleteRoleById(id int64) (err error) {
+// DeleteRoleByID removes a role from the database by it's ID.
+func (rq *RoleQuery) DeleteRoleByID(id int64) (err error) {
 	r := new(Role)
 	_, err = rq.DB.Model(r).Where("role.id = ?", id).Delete()
 	if err != nil {

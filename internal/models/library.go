@@ -15,7 +15,7 @@ import (
 )
 
 type LibraryPath struct {
-	Id        int64
+	ID        int64
 	Path      string
 	Added     time.Time `sql:"default:now()"`
 	LastIndex time.Time
@@ -52,7 +52,7 @@ func (lpq *LibraryPathQuery) GetLibraryPaths(queryValues url.Values) (paths []Li
 	return
 }
 
-func (lpq *LibraryPathQuery) GetLibraryPathById(id int64) (lp *LibraryPath, err error) {
+func (lpq *LibraryPathQuery) GetLibraryPathByID(id int64) (lp *LibraryPath, err error) {
 	lp = new(LibraryPath)
 	err = lpq.DB.Model(lp).Where("library_path.id = ?", id).Select()
 	if err != nil {
@@ -77,7 +77,7 @@ func (lpq *LibraryPathQuery) AddLibraryPath(path string) (lp *LibraryPath, err e
 	return
 }
 
-func (lpq *LibraryPathQuery) DeleteLibraryPathById(id int64) (err error) {
+func (lpq *LibraryPathQuery) DeleteLibraryPathByID(id int64) (err error) {
 	lp := new(LibraryPath)
 	_, err = lpq.DB.Model(lp).Where("library_path.id = ?", id).Delete()
 	if err != nil {

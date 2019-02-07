@@ -167,7 +167,7 @@ func main() {
 			logutils.Log.Error(fmt.Sprintf("Role '%s' does not exist", name), dberr)
 			return
 		}
-		dberr = rq.DeleteRoleById(role.Id)
+		dberr = rq.DeleteRoleByID(role.ID)
 		if dberr != nil {
 			logutils.Log.Error("Error deleting role", dberr)
 			return
@@ -203,7 +203,7 @@ func main() {
 		}
 		fmt.Printf("Roles: (Total: %d)\n", count)
 		for i, role := range roles {
-			fmt.Printf("  %d: %s\n", i, role.IdStr)
+			fmt.Printf("  %d: %s\n", i, role.IDStr)
 		}
 	case "describe":
 		if checkLen(args, 1, cmd) {
@@ -286,10 +286,10 @@ func modifyRole(cmd string, role *models.Role, rq *models.RoleQuery, args []stri
 		}
 		var pid int64
 		if prole != nil {
-			pid = prole.Id
+			pid = prole.ID
 		}
 
-		role.ParentId = pid
+		role.ParentID = pid
 		role.Parent = prole
 		_, dberr = rq.Update(role)
 		if dberr != nil {
@@ -308,7 +308,7 @@ func modifyRole(cmd string, role *models.Role, rq *models.RoleQuery, args []stri
 }
 
 func describeRole(role *models.Role) {
-	fmt.Printf("Role %s:\n", role.IdStr)
+	fmt.Printf("Role %s:\n", role.IDStr)
 	fmt.Println("Permissions:")
 	for k, v := range role.Perms {
 		status := "granted"
@@ -319,7 +319,7 @@ func describeRole(role *models.Role) {
 	}
 	fmt.Println("Parent:")
 	if role.Parent != nil {
-		fmt.Printf("- %d: %s\n", role.Parent.Id, role.Parent.IdStr)
+		fmt.Printf("- %d: %s\n", role.Parent.ID, role.Parent.IDStr)
 	} else {
 		fmt.Printf("- %s\n", "NONE")
 	}

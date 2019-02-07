@@ -4,7 +4,6 @@ CREATE TABLE "library_paths" (
   "added" timestamptz DEFAULT now(),
   "last_index" timestamptz,
   "indexing" boolean,
-
   PRIMARY KEY ("id")
 );
 
@@ -21,7 +20,6 @@ CREATE TABLE "tracks" (
   "samplerate" bigint,
   "path" text,
   "added" timestamptz DEFAULT now(),
-
   PRIMARY KEY ("id")
 );
 
@@ -30,7 +28,6 @@ CREATE TABLE "users" (
   "username" text UNIQUE,
   "password" text,
   "created_at" timestamptz DEFAULT now(),
-
   PRIMARY KEY ("id")
 );
 
@@ -39,12 +36,13 @@ CREATE TABLE "roles" (
   "id_str" text UNIQUE,
   "parent_id" bigint,
   "perms" jsonb,
-
   PRIMARY KEY ("id"),
   FOREIGN KEY ("parent_id") REFERENCES "roles" ("id")
 );
 
 CREATE TABLE "user_to_roles" (
   "user_id" bigint,
-  "role_id" bigint
+  "role_id" bigint,
+  FOREIGN KEY ("user_id") REFERENCES "users" ("id"),
+  FOREIGN KEY ("role_id") REFERENCES "roles" ("id")
 );
