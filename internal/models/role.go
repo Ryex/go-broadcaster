@@ -154,7 +154,7 @@ type RoleQuery struct {
 // GetRoleByName returns a role form the database by name
 func (rq *RoleQuery) GetRoleByName(name string) (r *Role, err error) {
 	r = new(Role)
-	err = rq.DB.Model(r).Where("role.id_str = ?", name).Relation("Parent").Select()
+	err = rq.DB.Model(r).Where("role.id_str = ?", name).Select()
 	if err != nil {
 		logutils.Log.Error("db query error %s", err)
 	}
@@ -164,7 +164,7 @@ func (rq *RoleQuery) GetRoleByName(name string) (r *Role, err error) {
 // GetRoleByID returns a Role from the database by ID
 func (rq *RoleQuery) GetRoleByID(id int64) (r *Role, err error) {
 	r = new(Role)
-	err = rq.DB.Model(r).Where("role.id = ?", id).Relation("Parent").Select()
+	err = rq.DB.Model(r).Where("role.id = ?", id).Select()
 	if err != nil {
 		logutils.Log.Error("db query error %s", err)
 	}
@@ -177,7 +177,7 @@ func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count
 	//var pagervalues urlvalues.Values
 	//err = urlvalues.Decode(queryValues, pagervalues)
 	q := rq.DB.Model(&roles)
-	count, err = q.Apply(urlvalues.Pagination(queryValues)).Relation("Parent").SelectAndCount()
+	count, err = q.Apply(urlvalues.Pagination(queryValues)).SelectAndCount()
 	if err != nil {
 		logutils.Log.Error("db query error %s", err)
 	}
@@ -188,8 +188,7 @@ func (rq *RoleQuery) GetRoles(queryValues urlvalues.Values) (roles []Role, count
 func (rq *RoleQuery) GetRolesByName(names []string) (roles []Role, err error) {
 	roles = make([]Role, len(names))
 	if len(roles) > 0 {
-		err = rq.DB.Model(&roles).Where("role.id_str in (?)", pg.In(names)).
-			Relation("Parent").Select()
+		err = rq.DB.Model(&roles).Where("role.id_str in (?)", pg.In(names)).Select()
 		if err != nil {
 			logutils.Log.Error("db query error: %s", err)
 		}
