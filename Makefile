@@ -15,17 +15,17 @@ default: build
 build: mediamon webserver
 
 mediamon: _godeps
-	$(GO) build -o ./bin/gobroadcaster-mediamon$(GOEXE) ./cmd/gobroadcaster-mediamon
+	$(GO) build -o ./bin/gobcast-mediamon$(GOEXE) ./cmd/gobcast-mediamon
 
 webserver: _godeps webclient
 	mkdir -p ./bin
 ifneq ($(MODE), production)
-	$(GO) build -o ./bin/gobroadcaster-web$(GOEXE) -tags=dev ./cmd/gobroadcaster-web
+	$(GO) build -o ./bin/gobcast-web$(GOEXE) -tags=dev ./cmd/gobcast-web
 else
-	cp -r ./bin/dist ./cmd.gobroadcaster-web/client
-	$(GO)	generate ./cmd/gobroadcaster-web/client
-	rm -rf ./cmd.gobroadcaster-web/client/dist
-	$(GO) build -o ./bin/gobroadcaster-web$(GOEXE) ./cmd/gobroadcaster-web
+	cp -r ./bin/dist ./cmd.gobcast-web/client
+	$(GO)	generate ./cmd/gobcast-web/client
+	rm -rf ./cmd.gobcast-web/client/dist
+	$(GO) build -o ./bin/gobcast-web$(GOEXE) ./cmd/gobcast-web
 endif
 
 webclient: _npmdeps
