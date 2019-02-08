@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
 
 	"github.com/ryex/go-broadcaster/internal/config"
 	"github.com/ryex/go-broadcaster/internal/logutils"
+	"github.com/ryex/go-broadcaster/internal/migrations"
 )
 
 const usageText = `This program runs command on the db. Supported commands are:
@@ -95,6 +95,8 @@ func main() {
 
 	setupDatabaseQueryLogging(db, outFile)
 	logutils.Log.Info("Writing output to %s", outFilePath)
+
+	fmt.Printf("Registered Versions: %v\n", migrations.RegisteredVersions())
 
 	oldVersion, newVersion, err := migrations.Run(db, flag.Args()...)
 	if err != nil {
