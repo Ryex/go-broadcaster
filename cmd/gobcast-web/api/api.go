@@ -13,7 +13,7 @@ import (
 type Api struct {
 	DB          *pg.DB
 	AuthTimeout time.Duration
-	Cfg         config.Config
+	Cfg         *config.Config
 }
 
 type H map[string]interface{}
