@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -12,9 +11,12 @@ func TestDuration(t *testing.T) {
 	td, _ := time.ParseDuration("24h")
 	d := Duration{Duration: td}
 
-	fmt.Printf("Duration Type: %T\n", d)
-	fmt.Printf("time.Duration Type: %T\n", td)
-	fmt.Printf("Embeded Type access: %T\n", d.Duration)
+	//fmt.Printf("Duration Type: %T\n", d)
+	//fmt.Printf("time.Duration Type: %T\n", td)
+	//fmt.Printf("Embeded Type access: %T\n", d.Duration)
+	if d.Duration != td {
+		t.Error("not equal")
+	}
 }
 
 func TestConfigToJSON(t *testing.T) {
@@ -26,7 +28,8 @@ func TestConfigToJSON(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("Json Marsheled cfg:\n %s\n", s)
+	//fmt.Printf("Json Marsheled cfg:\n %s\n", s)
+	t.Log(s)
 }
 
 func TestJSONToConfig(t *testing.T) {
@@ -52,7 +55,7 @@ func TestJSONToConfig(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("Loaded Config: %+v\n", cfg)
+	//fmt.Printf("Loaded Config: %+v\n", cfg)
 
 }
 
@@ -64,5 +67,5 @@ func TestParseURI(t *testing.T) {
 		t.Error(err)
 	}
 
-	fmt.Printf("CFG: %+v\n", cfg)
+	//fmt.Printf("CFG: %+v\n", cfg)
 }

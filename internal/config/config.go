@@ -95,11 +95,7 @@ func parseDBURI(uriStr string) (*DBInfo, error) {
 			}
 			dbi.DBName = p
 		}
-	} else {
-		err := fmt.Errorf("empty uri string")
-		return dbi, err
 	}
-
 	return dbi, nil
 }
 

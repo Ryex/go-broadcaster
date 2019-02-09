@@ -12,6 +12,7 @@
         target="_blank"
       >
         <span class="mr-2">Latest Release</span>
+        <span class="mr-2">Hello World page</span>
       </v-btn>
     </v-toolbar>
 
@@ -22,10 +23,10 @@
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+import HelloWorld from '@/components/HelloWorld'
 
 export default {
-  name: 'App',
+  name: 'MainApp',
   components: {
     HelloWorld
   },

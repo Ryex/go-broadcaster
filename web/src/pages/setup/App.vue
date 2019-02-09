@@ -12,22 +12,23 @@
         target="_blank"
       >
         <span class="mr-2">Latest Release</span>
+        <span class="mr-2">Setup Page</span>
       </v-btn>
     </v-toolbar>
 
     <v-content>
-      <HelloWorld/>
+      <Setup/>
     </v-content>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+import Setup from '@/components/Setup'
 
 export default {
-  name: 'App',
+  name: 'SetupApp',
   components: {
-    HelloWorld
+    Setup
   },
   data () {
     return {

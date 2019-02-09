@@ -1,11 +1,10 @@
 import Vue from 'vue'
-import './plugins/axios'
-import './plugins/vuetify'
+import '@/plugins/axios'
+import '@/plugins/vuetify'
 
-import App from './App.vue'
+import SetupApp from '@/pages/setup/App.vue'
 
-import axios from 'axios'
-import i18n from './i18n'
+import i18n from '@/i18n'
 
 Vue.config.productionTip = false
 Vue.config.devtools = true
@@ -13,7 +12,7 @@ Vue.config.devtools = true
 Vue.config.productionTip = false
 
 new Vue({
-  render: h => h(App),
+  render: h => h(SetupApp),
   i18n,
 
   created: function () {

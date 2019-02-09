@@ -1,5 +1,6 @@
 // vue.config.js
 module.exports = {
+  publicPath: "/",
   outputDir: "./dist",
 
   // options...
@@ -24,10 +25,10 @@ module.exports = {
       filename: 'index.html',
       // when using title option,
       // template title tag needs to be <title><%= htmlWebpackPlugin.options.title %></title>
-      title: 'Go-Bradcaster',
+      title: 'Go-Bradcaster'
       // chunks to include on this page, by default includes
       // extracted common chunks and vendor chunks.
-      chunks: ['chunk-vendors', 'chunk-common', 'index']
+      //chunks: ['chunk-vendors', 'chunk-common', 'index']
     },
     // when using the entry-only string format,
     // template is inferred to be `public/subpage.html`
@@ -37,8 +38,18 @@ module.exports = {
       entry: 'src/pages/setup/main.js',
       template: 'public/index.html',
       filename: 'setup.html',
-      title: 'Go-Bradcaster Setup',
-      chunks: ['chunk-vendors', 'chunk-common', 'index']
+      title: 'Go-Bradcaster Setup'
+      //chunks: ['chunk-vendors', 'chunk-common', 'index']
+    }
+  },
+
+  devServer: {
+    historyApiFallback: {
+      rewrites: [
+        { from: /\/index/, to: '/index.html' },
+        { from: /\/setup/, to: '/setup.html' }
+      ]
     }
   }
+
 }
